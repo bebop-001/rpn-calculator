@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bgCalc"
+    android:paddingLeft="8dp"
+    android:paddingRight="8dp"
+    tools:context="com.kana_tutor.rpncalc.ui.MainActivity">
+
+    <TextView
+        android:id="@+id/panelTextView"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:layout_gravity="bottom|end"
+        android:background="@android:color/white"
+        android:gravity="bottom|end"
+        android:padding="5dp"
+        android:text="@string/zero"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:weightSum="5"
+        app:layout_constraintTop_toBottomOf="@+id/panelTextView"
+        tools:ignore="HardcodedText" >
+
+        <!-- Column 1 -->
+        <LinearLayout style="@style/layoutButtonGroup">
+            <Button
+                android:id="@+id/btnClear"
+                style="@style/btnNumbers"
+                android:text="@string/clear_btn" />
+
+            <Button
+                android:id="@+id/btnDelete"
+                style="@style/btnNumbers"
+                android:text="@string/delete" />
+
+            <Button
+                android:id="@+id/btnEnter"
+                style="@style/btnNumbers"
+                android:layout_height="156dp"
+                android:background="@color/buttonBgControls"
+                android:layout_weight="2"
+                android:text="@string/enter"
+                android:layout_width="0dp" />
+        </LinearLayout>
+
+        <!-- Column 2 -->
+        <LinearLayout style="@style/layoutButtonGroup" >
+
+            <Button
+                android:id="@+id/btn7"
+                style="@style/btnNumbers"
+                android:text="7"
+                />
+
+            <Button
+                android:id="@+id/btn4"
+                style="@style/btnNumbers"
+                android:text="4"
+                />
+
+            <Button
+                android:id="@+id/btn1"
+                style="@style/btnNumbers"
+                android:text="1"
+                 />
+
+            <Button
+                android:id="@+id/btn0"
+                style="@style/btnNumbers"
+                android:text="1"
+                 />
+
+        </LinearLayout>
+
+        <!-- Column 3 -->
+        <LinearLayout style="@style/layoutButtonGroup">
+            <Button
+                android:id="@+id/btn8"
+                style="@style/btnNumbers"
+                android:text="8"
+                 />
+
+            <Button
+                android:id="@+id/btn5"
+                style="@style/btnNumbers"
+                android:text="5"
+                 />
+
+            <Button
+                android:id="@+id/btn2"
+                style="@style/btnNumbers"
+                android:text="2"
+                 />
+
+            <Button
+                android:id="@+id/btnDot"
+                style="@style/btnNumbers"
+                android:text="."
+                 />
+        </LinearLayout>
+
+        <!-- Column 4 -->
+        <LinearLayout style="@style/layoutButtonGroup">
+            <Button
+                android:id="@+id/btn9"
+                style="@style/btnNumbers"
+                android:text="9"
+                 />
+
+            <Button
+                android:id="@+id/btn6"
+                style="@style/btnNumbers"
+                android:text="6"
+                 />
+
+            <Button
+                android:id="@+id/btn3"
+                style="@style/btnNumbers"
+                android:text="3"
+                 />
+
+            <Button
+                android:id="@+id/btnSymbol"
+                style="@style/btnNumbers"
+                android:text="@string/plus_minus_symbol" />
+        </LinearLayout>
+
+        <!-- Column 5 -->
+        <LinearLayout style="@style/layoutButtonGroup">
+            <Button
+                android:id="@+id/btnDevide"
+                style="@style/btnNumbers"
+                android:background="@color/buttonBgControls"
+                android:text="@string/divide_symbol" />
+
+            <Button
+                android:id="@+id/btnMultiply"
+                style="@style/btnNumbers"
+                android:background="@color/buttonBgControls"
+                android:text="@string/multiply_symbol" />
+
+            <Button
+                android:id="@+id/btnSubtract"
+                style="@style/btnNumbers"
+                android:background="@color/buttonBgControls"
+                android:text="@string/subtract_symbol" />
+
+            <Button
+                android:id="@+id/btnSum"
+                style="@style/btnNumbers"
+                android:background="@color/buttonBgControls"
+                android:text="@string/sum_symbol" />
+        </LinearLayout>
+    </LinearLayout>
+
+</android.support.constraint.ConstraintLayout>
