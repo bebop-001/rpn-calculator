@@ -1,15 +1,18 @@
 package com.kana_tutor.rpncalc
+
+import java.util.*
+
 // from https://rosettacode.org/wiki/Parsing/RPN_calculator_algorithm
 fun rpnCalculate(expr: String) {
     if (expr.isEmpty()) throw IllegalArgumentException("Expresssion cannot be empty")
     println("For expression = $expr\n")
     println("Token           Action             Stack")
-    val tokens = expr.split(' ').filter { it != "" }
-    val stack = mutableListOf<Double>()
+    val tokens = expr.split("\\s+".toRegex())
+    val stack = Stack<Double>()
     for (token in tokens) {
         val d = token.toDoubleOrNull()
         if (d != null) {
-            stack.add(d)
+            stack.push(d)
             println(" $d   Push num onto top of stack  $stack")
         }
         else if ((token.length > 1) || (token !in "+-*/^")) {
@@ -19,14 +22,15 @@ fun rpnCalculate(expr: String) {
             throw IllegalArgumentException("Stack contains too few operands")
         }
         else {
-            val d1 = stack.removeAt(stack.lastIndex)
-            val d2 = stack.removeAt(stack.lastIndex)
-            stack.add(when (token) {
+            val d1 = stack.pop()
+            val d2 = stack.pop()
+            stack.push(when (token) {
                 "+"  -> d2 + d1
                 "-"  -> d2 - d1
                 "*"  -> d2 * d1
                 "/"  -> d2 / d1
-                else -> Math.pow(d2, d1)
+                "^" -> Math.pow(d2, d1)
+                else -> throw Exception("Unexpected op: $token")
             })
             println(" $token     Apply op to top of stack    $stack")
         }
@@ -34,7 +38,7 @@ fun rpnCalculate(expr: String) {
     println("\nThe final value is ${stack[0]}")
 }
 
-fun main(args: Array<String>) {
+fun main(@Suppress("UNUSED_PARAMETER") args: Array<String>) {
     val expr = "3 4 2 * 1 5 - 2 3 ^ ^ / + 6 8 + -"
     rpnCalculate(expr)
 }
