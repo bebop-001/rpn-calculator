@@ -8,13 +8,20 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="btnNumbers">
+    <style name="number_button">
         <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">78dp</item>
+        <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@color/buttonBg</item>
+        <item name="android:onClick">btnOnClick</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">@android:color/white</item>
+        <item name="android:layout_margin">1dp</item>
+        <item name="android:weightSum">4</item>
         <item name="android:layout_weight">1</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+    <style name="operation_button" parent="number_button">
+        <item name="android:background">@color/buttonBgControls</item>
     </style>
 
     <style name="layoutButtonGroup">

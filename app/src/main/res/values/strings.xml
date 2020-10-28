@@ -5,12 +5,7 @@
     <string name="clear">Clear</string>
     <string name="delete">DEL</string>
     <string name="enter">ENTR</string>
-    <string name="seven">7</string>
-    <string name="plus_minus_symbol">+-</string>
-    <string name="divide_symbol">÷</string>
-    <string name="multiply_symbol">×</string>
-    <string name="subtract_symbol">-</string>
-    <string name="sum_symbol">+</string>
+    <string name="seven">\u0026🔄🔄</string>
     <string name="history">History</string>
     <string name="history_empty">History empty</string>
     <string name="clear_history_message">Are you sure you want to clear the whole history?</string>

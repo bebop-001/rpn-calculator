@@ -1,131 +1,145 @@
+@file:Suppress("unused", "unused", "unused")
+
 package com.kana_tutor.rpncalc.ui
 
-import android.content.Intent
-import android.content.SharedPreferences
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.view.Menu
-import android.view.MenuItem
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import com.kana_tutor.rpncalc.R
-import com.kana_tutor.rpncalc.model.Rpn
+import java.util.*
+import kotlin.math.pow
+
+// from https://rosettacode.org/wiki/Parsing/RPN_calculator_algorithm
+fun rpnCalculate(expr: String) : String {
+    fun Stack<String>.popD():Double {
+        return this.pop().toDouble()
+    }
+    fun Stack<String>.pushD(d : Double) {
+        this.push(d.toString())
+    }
+    fun List<String>.lastEquals(token:String) : Boolean {
+        val lastIndex = this.lastIndex
+        return lastIndex >= 0 && this[lastIndex] == token
+    }
+    fun String?.isNumber() : Boolean =
+         (this != null && "^[-+]*\\d+(?:.\\d+)*$".toRegex().matches(this))
+    if (expr.isEmpty()) return ""
+    println("For expression = $expr\n")
+    println("Token           Action             Stack")
+    val tokens = Stack<String>()
+    tokens.addAll(expr.split("\\s+".toRegex()).filter{it.isNotEmpty()})
+    when {
+        tokens.lastEquals("DEL") -> {
+            tokens.pop()
+            if (tokens.size > 0) {
+                val t = tokens.pop().dropLast(1)
+                if (t.isNotEmpty())
+                    tokens.push(t)
+                return tokens.joinToString("\n")
+            }
+        }
+        tokens.lastEquals("CHS") -> {
+            tokens.pop()
+            if (tokens.size > 0) {
+                var t = tokens.pop()
+                if (t.isNumber()) {
+                    t = when {
+                        t.startsWith("+") -> t.replaceFirst("+", "-")
+                        t.startsWith("-") -> t.replaceFirst("-", "+")
+                        else -> "-$t"
+                    }
+                }
+                tokens.push(t)
+            }
+        }
+        tokens.lastEquals("SWAP") -> {
+            tokens.pop()
+            if (tokens.size >= 2) {
+                val t1 = tokens.pop()
+                val t2 = tokens.pop()
+                tokens.push(t1)
+                tokens.push(t2)
+            }
+            return tokens.joinToString("\n")
+        }
+        tokens.lastEquals("DROP") -> {
+            tokens.pop()
+            if (tokens.size >= 1) {
+                tokens.pop()
+            }
+            return tokens.joinToString("\n")
+        }
+        tokens.lastEquals("CLR") -> tokens.clear()
+    }
+    val stack = Stack<String>()
+    for (token in tokens) {
+        when (token) {
+            // op that expects two floats on stack.
+            "+", "-", "×", "*", "÷", "/", "^" -> {
+                val d1 = stack.popD()
+                val d2 = stack.popD()
+                when (token) {
+                    "+"         -> stack.pushD(d2 + d1)
+                    "-"         -> stack.pushD(d2 - d1)
+                    "×", "*"    -> stack.pushD(d2 * d1)
+                    "÷", "/"    -> stack.pushD(d2 / d1)
+                    "^"         -> stack.pushD(d2.pow(d1))
+                }
+                println(" $token     Apply op to top of stack    $stack")
+            }
+            "ENTR" -> stack.push("")
+            else -> stack.push(token)
+        }
+    }
+    return stack.joinToString("\n")
+}
 
 class MainActivity : AppCompatActivity() {
     // Member variables
-    private var panelTextView: TextView? = null
-    private var input: String? = null
-    private var btnClicked: Button? = null
-    private var lastIsZero = false
-    private var operationPerformed = false
-    private var historyStore: SharedPreferences? = null
-    private val rpn = Rpn()
+    private lateinit var panelTextView: TextView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         panelTextView = findViewById(R.id.panelTextView)
-        historyStore = getSharedPreferences(Rpn.KEY, MODE_PRIVATE)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = menuInflater
-        inflater.inflate(R.menu.settings_menu, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.btnHistory -> {
-                val i = Intent(this@MainActivity, HistoryActivity::class.java)
-                startActivity(i)
-                true
-            }
-            R.id.btnAbout -> {
-                startActivity(Intent(this@MainActivity, AboutActivity::class.java))
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
+    @SuppressLint("SetTextI18n")
     fun btnOnClick(v: View) {
-        // Split the content of the panelTextView into an string array
-        val strSplitted = panelTextView!!.text.toString().split("\n".toRegex()).toTypedArray()
         val cls = v.javaClass.simpleName.toString()
         val buttonText : String
-        when (cls) {
-            "AppCompatImageButton" -> buttonText = v.tag.toString()
-            "AppCompatButton" -> buttonText = (v as Button).text.toString()
-            else -> buttonText = ""
+        buttonText = when (cls) {
+            "AppCompatImageButton" -> v.tag.toString()
+            "AppCompatButton" -> (v as Button).text.toString()
+            else -> ""
         }
 
-        when (buttonText) {
-            "CLR" -> {
-                operationPerformed = false
-                panelTextView!!.text = "0"
-            }
-            "DEL" -> {
-
-                // Remove the last number entered
-                var newInput = rpn.delete(panelTextView!!.text.toString())
-                if (newInput.length == 0) {
-                    newInput = "0"
+        try {
+            when (buttonText) {
+                "CLR", "DEL", "ENTR", "SWAP", "DROP" -> {
+                    panelTextView.text = rpnCalculate(
+                            panelTextView.text.toString() + " $buttonText")
                 }
-                panelTextView!!.text = newInput
-            }
-            "ENTR" -> if (panelTextView!!.text.toString().length > 1 || panelTextView!!.text.toString().toDouble() != 0.0) {
-                operationPerformed = false
-                panelTextView!!.text = rpn.formatInput(strSplitted) //Format input
-                panelTextView!!.append("\n0") // Append new line with a default zero in the text view
-                lastIsZero = true
-            }
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." -> {
-                // Handler numeric buttons
-
-                /* A Button is also a View, so I'll cast the View parameter called v that onClick
-                   method receive into a Button object, this way I can get properties of the button
-                   clicked, for example the button's text */btnClicked = v as Button
-
-                // Check if is the first input of the row
-                if (panelTextView!!.text.toString().length == 1 && panelTextView!!.text.toString().toDouble() == 0.0 && buttonText != ".") {
-                    panelTextView!!.text = btnClicked!!.text
+                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." -> {
+                    panelTextView.text = panelTextView.text.toString() + buttonText
                 }
-                else {
-                    if (lastIsZero && buttonText != ".") {
-                        panelTextView!!.text = rpn.delete(panelTextView!!.text.toString())
-                    }
-                    if (operationPerformed) {
-                        panelTextView!!.append("\n")
-                        operationPerformed = false
-                    }
-                    // Avoid insert more than one zero per input
-                    if (buttonText == "." && !strSplitted[strSplitted.size - 1].contains(".")) {
-                        panelTextView!!.append(".")
-                    }
-                    else if (buttonText != ".") {
-                        panelTextView!!.append(btnClicked!!.text) // Append input to textview
-                    }
-                    lastIsZero = false
+                // change sign
+                "+-" -> {
+                    panelTextView.text = rpnCalculate(
+                            panelTextView.text.toString() + " CHS ")
                 }
-            }
-            // change sign
-            "+-" -> {
-                // Change symbol of last input
-                val input = rpn.changeInputSymbol(strSplitted)
-                if (input.length > 0) {
-                    panelTextView!!.text = input
+                "+", "-", "×", "÷", "^" -> {
+                    panelTextView.text = panelTextView.text.toString() + " $buttonText "
                 }
+                else -> Log.d("btnOnClick", "$buttonText ignored")
             }
-            "+", "-", "×", "÷" -> {
-                // Handler operator buttons
-                btnClicked = v as Button
-                if (strSplitted.size > 1) {
-                    operationPerformed = true
-                    input = rpn.proccess(strSplitted, btnClicked!!.text.toString(), historyStore)
-                    panelTextView!!.text = input
-                }
-            }
+        }
+        catch (e:Exception) {
+            Toast.makeText(this, "Error: $e", Toast.LENGTH_LONG).show()
         }
     }
 }
