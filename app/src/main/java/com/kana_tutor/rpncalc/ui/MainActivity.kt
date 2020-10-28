@@ -114,7 +114,8 @@ class MainActivity : AppCompatActivity() {
         val buttonText : String
         buttonText = when (cls) {
             "AppCompatImageButton" -> v.tag.toString()
-            "AppCompatButton" -> (v as Button).text.toString()
+            "AppCompatButton" -> if (v.tag != null) v.tag.toString()
+                else (v as Button).text.toString()
             else -> ""
         }
 
@@ -133,7 +134,8 @@ class MainActivity : AppCompatActivity() {
                             panelTextView.text.toString() + " CHS ")
                 }
                 "+", "-", "×", "÷", "^" -> {
-                    panelTextView.text = panelTextView.text.toString() + " $buttonText "
+                    panelTextView.text = rpnCalculate(
+                            panelTextView.text.toString() + " $buttonText ENTR")
                 }
                 else -> Log.d("btnOnClick", "$buttonText ignored")
             }

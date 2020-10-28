@@ -44,15 +44,18 @@
                 style="@style/operation_button"
                 android:text="DEL" />
 
-            <ImageButton
+            <Button
                 style="@style/operation_button"
+                android:text="x⇆y"
                 android:layout_width="match_parent"
                 android:src="@android:drawable/ic_popup_sync"
                 android:tag="SWAP" />
 
-            <ImageButton
+            <Button
                 style="@style/operation_button"
                 android:layout_width="match_parent"
+                android:text="⇩"
+                android:textSize="20sp"
                 android:src="@android:drawable/stat_sys_download"
                 android:tag="DROP" />
         </LinearLayout>
