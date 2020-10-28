@@ -45,14 +45,21 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, AboutActivity::class.java))
                 true
             }
-            else            -> super.onOptionsItemSelected(item)
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
     fun btnOnClick(v: View) {
         // Split the content of the panelTextView into an string array
         val strSplitted = panelTextView!!.text.toString().split("\n".toRegex()).toTypedArray()
-        val buttonText = (v as  Button).text
+        val cls = v.javaClass.simpleName.toString()
+        val buttonText : String
+        when (cls) {
+            "AppCompatImageButton" -> buttonText = v.tag.toString()
+            "AppCompatButton" -> buttonText = (v as Button).text.toString()
+            else -> buttonText = ""
+        }
+
         when (buttonText) {
             "CLR" -> {
                 operationPerformed = false
@@ -81,11 +88,11 @@ class MainActivity : AppCompatActivity() {
                    clicked, for example the button's text */btnClicked = v as Button
 
                 // Check if is the first input of the row
-                if (panelTextView!!.text.toString().length == 1 && panelTextView!!.text.toString().toDouble() == 0.0 && v.getId() != R.id.btnDot) {
+                if (panelTextView!!.text.toString().length == 1 && panelTextView!!.text.toString().toDouble() == 0.0 && buttonText != ".") {
                     panelTextView!!.text = btnClicked!!.text
                 }
                 else {
-                    if (lastIsZero && v.getId() != R.id.btnDot) {
+                    if (lastIsZero && buttonText != ".") {
                         panelTextView!!.text = rpn.delete(panelTextView!!.text.toString())
                     }
                     if (operationPerformed) {
@@ -93,10 +100,10 @@ class MainActivity : AppCompatActivity() {
                         operationPerformed = false
                     }
                     // Avoid insert more than one zero per input
-                    if (v.getId() == R.id.btnDot && !strSplitted[strSplitted.size - 1].contains(".")) {
+                    if (buttonText == "." && !strSplitted[strSplitted.size - 1].contains(".")) {
                         panelTextView!!.append(".")
                     }
-                    else if (v.getId() != R.id.btnDot) {
+                    else if (buttonText != ".") {
                         panelTextView!!.append(btnClicked!!.text) // Append input to textview
                     }
                     lastIsZero = false
