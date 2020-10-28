@@ -103,7 +103,7 @@
                 style="@style/number_button"
                 android:text="3"/>
             <Button
-                style="@style/number_button"
+                style="@style/operation_button"
                 android:text="+-" />
         </LinearLayout>
 
