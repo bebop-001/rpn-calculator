@@ -47,15 +47,19 @@
             <Button
                 style="@style/operation_button"
                 android:text="x⇆y"
-                android:layout_width="match_parent"
                 android:tag="SWAP" />
 
             <Button
                 style="@style/operation_button"
-                android:layout_width="match_parent"
+                android:id="@+id/drop_button"
                 android:text="⇩"
                 android:textSize="20sp"
                 android:tag="DROP" />
+            <Button
+                android:id="@+id/deg_rad_button"
+                style="@style/operation_button"
+                android:text="DEG" />
+
             <Button
                 style="@style/operation_button"
                 android:text="⇳SHFT" />

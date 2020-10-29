@@ -32,6 +32,7 @@ fun rpnCalculate(expr: String) : String {
          (this != null && "^[-+]*\\d+(?:.\\d+)*$".toRegex().matches(this))
     fun Double.degreesToRadians() : Double = this * kotlin.math.PI / 180
     fun Double.radiansToDegrees() : Double = this * 180 / kotlin.math.PI
+    var angleIsDegrees = true
 
     if (expr.isEmpty()) return ""
     println("For expression = $expr\n")
@@ -97,8 +98,12 @@ fun rpnCalculate(expr: String) : String {
                 }
                 println(" $token     Apply op to top of stack    $stack")
             }
+            "RAD" -> { angleIsDegrees = false }
+            "DEG" -> { angleIsDegrees = true }
             "SIN", "COS", "TAN",-> {
-                val angle = stack.popD().degreesToRadians()
+                var angle = stack.popD()
+                if (angleIsDegrees)
+                    angle = angle.degreesToRadians()
                 stack.pushD(when (token) {
                     "SIN" -> kotlin.math.sin(angle)
                     "COS" -> kotlin.math.cos(angle)
@@ -109,13 +114,18 @@ fun rpnCalculate(expr: String) : String {
                 })
             }
             "ASIN", "ACOS", "ATAN" -> {
-                val value = stack.popD()
-                stack.pushD(when (token) {
+                var value = stack.popD()
+                if (angleIsDegrees)
+                    value = value.degreesToRadians()
+                var rv = when (token) {
                     "ASIN" -> kotlin.math.asin(value)
                     "ACOS" -> kotlin.math.acos(value)
                     "ATAN" -> kotlin.math.atan(value)
                     else -> {0.0 /* can't happen. */}
-                }.radiansToDegrees())
+                }
+                if (angleIsDegrees)
+                    rv = rv.radiansToDegrees()
+                stack.pushD(rv)
             }
             "ENTR" -> stack.push("")
             else -> stack.push(token)
@@ -134,8 +144,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     var shiftIsUp = true
+    var angleIsDegrees = true
     @SuppressLint("SetTextI18n")
     fun btnOnClick(v: View) {
+        fun Button.setButton(textIn:String, textColor:Int, tag : String = "") {
+            text = textIn
+            setTextColor(textColor)
+            if (tag.isNotEmpty())
+                this.tag = tag
+        }
         val cls = v.javaClass.simpleName.toString()
         val buttonText : String
         buttonText = when (cls) {
@@ -147,17 +164,33 @@ class MainActivity : AppCompatActivity() {
 
         try {
             when (buttonText) {
+                "DEG" -> {
+                    angleIsDegrees = false
+                    (v as Button).setTextColor(ContextCompat.getColor(
+                            this, R.color.shift_down_text))
+                    v.setBackgroundColor(
+                            ContextCompat.getColor(
+                                    this, R.color.shift_down_bg))
+                    (v as Button).text = "RAD"
+                }
+                "RAD" -> {
+                    angleIsDegrees = true
+                    (v as Button).setTextColor(ContextCompat.getColor(
+                            this, android.R.color.white))
+                    v.setBackgroundColor(
+                            ContextCompat.getColor(
+                                    this, R.color.operation_button))
+                    (v as Button).text = "DEG"
+                }
                 "⇳SHFT" -> {
                     if (shiftIsUp) {
                         val textColor = ContextCompat.getColor(
                                 this, R.color.shift_down_text)
                         shiftIsUp = false
-                        tangent_button.text = "ATAN"
-                        sine_button.text = "ASIN"
-                        cosine_button.text = "ACOS"
-                        tangent_button.setTextColor(textColor)
-                        sine_button.setTextColor(textColor)
-                        cosine_button.setTextColor(textColor)
+                        tangent_button.setButton("ATAN", textColor)
+                        sine_button.setButton("ASIN", textColor)
+                        cosine_button.setButton("ACOS", textColor)
+                        drop_button.setButton("π", textColor, "PI")
                         (v as Button).setTextColor(textColor)
 
                         v.setBackgroundColor(
@@ -168,6 +201,11 @@ class MainActivity : AppCompatActivity() {
                         shiftIsUp = true
                         val textColor = ContextCompat.getColor(
                                 this, android.R.color.white)
+                        tangent_button.setButton("TAN", textColor)
+                        sine_button.setButton("SIN", textColor)
+                        cosine_button.setButton("COS", textColor)
+                        drop_button.setButton("⇩", textColor, "DROP")
+
                         tangent_button.setTextColor(textColor)
                         sine_button.setTextColor(textColor)
                         cosine_button.setTextColor(textColor)
@@ -181,6 +219,9 @@ class MainActivity : AppCompatActivity() {
                                         this, R.color.operation_button))
                     }
                 }
+                "PI" -> {panelTextView.text = panelTextView.text.toString() +
+                    "\n${kotlin.math.PI}\n"
+                }
                 "CLR", "DEL", "ENTR", "SWAP", "DROP" -> {
                     panelTextView.text = rpnCalculate(
                             panelTextView.text.toString() + " $buttonText")
@@ -193,9 +234,14 @@ class MainActivity : AppCompatActivity() {
                     panelTextView.text = rpnCalculate(
                             panelTextView.text.toString() + " CHS ")
                 }
-                "+", "-", "×", "÷", "^", "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
+                "+", "-", "×", "÷", "^" -> {
                     panelTextView.text = rpnCalculate(
                             panelTextView.text.toString() + " $buttonText ENTR")
+                }
+                "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
+                    val modeText = if(angleIsDegrees) "DEG" else "RAD"
+                    panelTextView.text = rpnCalculate(
+                            panelTextView.text.toString() + " $modeText $buttonText ENTR")
                 }
                 else -> Log.d("btnOnClick", "$buttonText ignored")
             }
