@@ -9,7 +9,7 @@
     android:background="@color/bgCalc"
     android:paddingLeft="8dp"
     android:paddingRight="8dp"
-    tools:context="com.kana_tutor.rpncalc.ui.MainActivity">
+    tools:context="com.kana_tutor.rpncalc.MainActivity">
 
     <TextView
         android:id="@+id/panelTextView"

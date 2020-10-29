@@ -1,6 +1,6 @@
 package com.kana_tutor.rpncalc
 
-import com.kana_tutor.rpncalc.ui.rpnCalculate
+import com.kana_tutor.rpncalc.rpnCalculate
 import java.util.*
 
 // interactive command line interface to rpnCalc
