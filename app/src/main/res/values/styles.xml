@@ -21,7 +21,7 @@
         <item name="android:textColor">@android:color/white</item>
     </style>
     <style name="operation_button" parent="number_button">
-        <item name="android:background">@color/buttonBgControls</item>
+        <item name="android:background">@color/operation_button</item>
     </style>
 
     <style name="layoutButtonGroup">

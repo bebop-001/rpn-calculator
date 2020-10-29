@@ -4,6 +4,7 @@ package com.kana_tutor.rpncalc.ui
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
@@ -11,6 +12,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import com.kana_tutor.rpncalc.R
+import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 import kotlin.math.pow
 
@@ -28,6 +30,9 @@ fun rpnCalculate(expr: String) : String {
     }
     fun String?.isNumber() : Boolean =
          (this != null && "^[-+]*\\d+(?:.\\d+)*$".toRegex().matches(this))
+    fun Double.degreesToRadians() : Double = this * kotlin.math.PI / 180
+    fun Double.radiansToDegrees() : Double = this * 180 / kotlin.math.PI
+
     if (expr.isEmpty()) return ""
     println("For expression = $expr\n")
     println("Token           Action             Stack")
@@ -92,6 +97,26 @@ fun rpnCalculate(expr: String) : String {
                 }
                 println(" $token     Apply op to top of stack    $stack")
             }
+            "SIN", "COS", "TAN",-> {
+                val angle = stack.popD().degreesToRadians()
+                stack.pushD(when (token) {
+                    "SIN" -> kotlin.math.sin(angle)
+                    "COS" -> kotlin.math.cos(angle)
+                    "TAN" -> kotlin.math.tan(angle)
+                    else  -> {
+                        0.0 /* can't happen. */
+                    }
+                })
+            }
+            "ASIN", "ACOS", "ATAN" -> {
+                val value = stack.popD()
+                stack.pushD(when (token) {
+                    "ASIN" -> kotlin.math.asin(value)
+                    "ACOS" -> kotlin.math.acos(value)
+                    "ATAN" -> kotlin.math.atan(value)
+                    else -> {0.0 /* can't happen. */}
+                }.radiansToDegrees())
+            }
             "ENTR" -> stack.push("")
             else -> stack.push(token)
         }
@@ -108,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         panelTextView = findViewById(R.id.panelTextView)
     }
 
+    var shiftIsUp = true
     @SuppressLint("SetTextI18n")
     fun btnOnClick(v: View) {
         val cls = v.javaClass.simpleName.toString()
@@ -121,6 +147,40 @@ class MainActivity : AppCompatActivity() {
 
         try {
             when (buttonText) {
+                "⇳SHFT" -> {
+                    if (shiftIsUp) {
+                        val textColor = ContextCompat.getColor(
+                                this, R.color.shift_down_text)
+                        shiftIsUp = false
+                        tangent_button.text = "ATAN"
+                        sine_button.text = "ASIN"
+                        cosine_button.text = "ACOS"
+                        tangent_button.setTextColor(textColor)
+                        sine_button.setTextColor(textColor)
+                        cosine_button.setTextColor(textColor)
+                        (v as Button).setTextColor(textColor)
+
+                        v.setBackgroundColor(
+                            ContextCompat.getColor(
+                                this, R.color.shift_down_bg))
+                    }
+                    else {
+                        shiftIsUp = true
+                        val textColor = ContextCompat.getColor(
+                                this, android.R.color.white)
+                        tangent_button.setTextColor(textColor)
+                        sine_button.setTextColor(textColor)
+                        cosine_button.setTextColor(textColor)
+                        (v as Button).setTextColor(textColor)
+
+                        tangent_button.text = "TAN"
+                        sine_button.text = "SIN"
+                        cosine_button.text = "COS"
+                        v.setBackgroundColor(
+                                ContextCompat.getColor(
+                                        this, R.color.operation_button))
+                    }
+                }
                 "CLR", "DEL", "ENTR", "SWAP", "DROP" -> {
                     panelTextView.text = rpnCalculate(
                             panelTextView.text.toString() + " $buttonText")
@@ -133,7 +193,7 @@ class MainActivity : AppCompatActivity() {
                     panelTextView.text = rpnCalculate(
                             panelTextView.text.toString() + " CHS ")
                 }
-                "+", "-", "×", "÷", "^" -> {
+                "+", "-", "×", "÷", "^", "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                     panelTextView.text = rpnCalculate(
                             panelTextView.text.toString() + " $buttonText ENTR")
                 }

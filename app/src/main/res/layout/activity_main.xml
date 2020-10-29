@@ -48,7 +48,6 @@
                 style="@style/operation_button"
                 android:text="x⇆y"
                 android:layout_width="match_parent"
-                android:src="@android:drawable/ic_popup_sync"
                 android:tag="SWAP" />
 
             <Button
@@ -56,12 +55,19 @@
                 android:layout_width="match_parent"
                 android:text="⇩"
                 android:textSize="20sp"
-                android:src="@android:drawable/stat_sys_download"
                 android:tag="DROP" />
+            <Button
+                style="@style/operation_button"
+                android:text="⇳SHFT" />
+
         </LinearLayout>
 
         <!-- Column 2 -->
         <LinearLayout style="@style/layoutButtonGroup" >
+            <Button
+                android:id="@+id/sine_button"
+                style="@style/operation_button"
+                android:text="SIN" />
             <Button
                 style="@style/number_button"
                 android:text="7" />
@@ -79,6 +85,10 @@
         <!-- Column 3 -->
         <LinearLayout style="@style/layoutButtonGroup">
             <Button
+                android:id="@+id/cosine_button"
+                style="@style/operation_button"
+                android:text="COS" />
+            <Button
                 style="@style/number_button"
                 android:text="8" />
             <Button
@@ -94,6 +104,10 @@
 
         <!-- Column 4 -->
         <LinearLayout style="@style/layoutButtonGroup">
+            <Button
+                android:id="@+id/tangent_button"
+                style="@style/operation_button"
+                android:text="TAN" />
             <Button
                 style="@style/number_button"
                 android:text="9"
@@ -120,14 +134,14 @@
                 android:text="÷" />
             <Button
                 style="@style/number_button"
-                android:background="@color/buttonBgControls"
+                android:background="@color/operation_button"
                 android:text="×" />
             <Button
                 style="@style/operation_button"
                 android:text="-" />
             <Button
                 style="@style/number_button"
-                android:background="@color/buttonBgControls"
+                android:background="@color/operation_button"
                 android:text="+" />
             <Button
                 style="@style/operation_button"
