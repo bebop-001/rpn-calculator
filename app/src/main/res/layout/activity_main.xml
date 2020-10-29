@@ -15,8 +15,8 @@
     <TextView
         android:id="@+id/panelTextView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="bottom|right"
+        android:layout_height="0dp"
+        android:gravity="bottom|end"
         android:layout_weight="1"
         android:background="@android:color/white"
         android:padding="5dp"
