@@ -13,7 +13,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.kana_tutor.rpncalc.R
-import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.keyboard_layout.*
 
 class MainActivity : AppCompatActivity() {
     companion object {
