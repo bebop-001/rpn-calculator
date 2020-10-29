@@ -1,4 +1,4 @@
-package com.kana_tutor.rpncalc.ui
+package com.kana_tutor.rpncalc
 
 import java.util.*
 import kotlin.math.pow

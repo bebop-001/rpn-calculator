@@ -1,6 +1,6 @@
 @file:Suppress("unused", "unused", "unused", "ObjectPropertyName")
 
-package com.kana_tutor.rpncalc.ui
+package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
