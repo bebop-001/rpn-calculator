@@ -6,13 +6,17 @@ import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.kana_tutor.rpncalc.R
+import com.kana_tutor.rpncalc.kanautils.buildInfoDialog
+import com.kana_tutor.rpncalc.kanautils.displayReleaseInfo
+import com.kana_tutor.rpncalc.kanautils.showAboutDialog
 import kotlinx.android.synthetic.main.keyboard_layout.*
 
 class MainActivity : AppCompatActivity() {
@@ -160,4 +164,45 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Error: $e", Toast.LENGTH_LONG).show()
         }
     }
+        // Default menu.  Unless a class implements its own onCreateOptionsMenu
+    // method, it gets menu items defined in the menu/base_activity
+    override fun onCreateOptionsMenu(menu: Menu) :Boolean {
+        getMenuInflater().inflate(R.menu.main_menu, menu)
+        setTitle(getString(R.string.app_label))
+        return true
+    }
+    // Default menu handler.  As long as a menu item has an ID here, it
+    // gets handled here.
+    override fun onOptionsItemSelected(item: MenuItem) :Boolean {
+        when (item.itemId) {
+            R.id.build_info -> return buildInfoDialog()
+            R.id.release_info_item -> return displayReleaseInfo(false)
+            R.id.menu_about -> return showAboutDialog()
+            else            -> {             // Currently nested menu items aren't caught in switch above
+                // and show up here.
+                Log.i("MainActivity", String.format(
+                        "onOptionsItemSelected: unhandled id: 0x%08x", item.itemId)
+                )
+            }
+        }
+        return false
+    }
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Show the release info if this is an upgrade.
+        val CURRENT_VERSION = "currentVersion"
+        val curVersion: Int = com.kana_tutor.rpncalc.MainActivity.sharedPreferences.getInt(CURRENT_VERSION, 0)
+        Log.d("showUpdateReleaseInfo",
+                java.lang.String.format(
+                        "current:%s, new:%s",
+                        curVersion, BuildConfig.VERSION_CODE)
+        )
+        if (curVersion != BuildConfig.VERSION_CODE) {
+            displayReleaseInfo(true)
+            com.kana_tutor.rpncalc.MainActivity.sharedPreferences.edit()
+                    .putInt(CURRENT_VERSION, BuildConfig.VERSION_CODE)
+                    .apply()
+        }
+    }
+
 }

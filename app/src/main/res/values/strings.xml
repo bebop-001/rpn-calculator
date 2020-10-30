@@ -1,24 +1,6 @@
 <resources>
-    <string name="app_name">RPN Calc</string>
-    <string name="zero">0</string>
-    <string name="clear_btn">CLR</string>
-    <string name="clear">Clear</string>
-    <string name="delete">DEL</string>
-    <string name="enter">ENTR</string>
-    <string name="seven">\u0026🔄🔄</string>
-    <string name="history">History</string>
-    <string name="history_empty">History empty</string>
-    <string name="clear_history_message">Are you sure you want to clear the whole history?</string>
-    <string name="yes">Yes</string>
-    <string name="alert_dialog_ok">OK</string>
-    <string name="alert_dialog_cancel">Cancel</string>
+    <string name="app_label">RPN Calc</string>
     <string name="about">About</string>
-    <string name="made_in_santo_domingo">Made with &#9829; in Santo Domingo, DR by</string>
-    <string name="author_name">Algenis Volquez</string>
-    <string name="author_linkedin_profile">https://www.linkedin.com/in/evolquez/</string>
-    <string name="author_github_profile">https://github.com/evolquez</string>
-    <string name="rpn_calculator">RPN Calculator</string>
-    <string name="github">Github</string>
-    <string name="linkedin">Linkedin</string>
-    <string name="app_description">This RPN Calculator includes basic operations like (Add, Subtract, Multiply and Divide) in addition to showing a simple and beautiful history.</string>
+    <string name="build_info">Build Info</string>
+    <string name="release_info">Release Info</string>
 </resources>
