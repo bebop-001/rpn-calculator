@@ -138,7 +138,10 @@ class RpnParser private constructor() {
                             rv = rv.radiansToDegrees()
                         stack.pushD(rv)
                     }
+                    // push an empty token on the stack. ENTR caused call
+                    // to parser.  That's all that we need.
                     "ENTR"                            -> stack.push("")
+                    // push the value on the stack.  It's probably a number.
                     else                              -> stack.push(token)
                 }
             }
