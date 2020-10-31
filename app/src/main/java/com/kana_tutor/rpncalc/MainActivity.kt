@@ -38,6 +38,9 @@ class MainActivity : AppCompatActivity() {
         angleIsDegrees = sharedPreferences.getBoolean("angleIsDegrees", true)
         panelTextView = findViewById(R.id.panelTextView)
     }
+    private fun calculate(toCalculate: String) : String {
+        return RpnParser.rpnCalculate(toCalculate)
+    }
 
     @SuppressLint("SetTextI18n")
     fun btnOnClick(v: View) {
@@ -126,12 +129,9 @@ class MainActivity : AppCompatActivity() {
                                         this, R.color.operation_button))
                     }
                 }
-                "PI" -> {
-                    panelTextView.text = panelTextView.text.toString() +
-                            "\n${kotlin.math.PI}\n"
-                }
+                "PI" -> panelTextView.text = panelTextView.text.toString() + " PI\n"
                 "CLR", "ENTR", "SWAP", "DROP" -> {
-                    panelTextView.text = rpnCalculate(
+                    panelTextView.text = calculate(
                             panelTextView.text.toString() + " $buttonText")
                 }
                 "DEL" -> {
@@ -145,16 +145,16 @@ class MainActivity : AppCompatActivity() {
                 }
                 // change sign
                 "CHS" -> {
-                    panelTextView.text = rpnCalculate(
+                    panelTextView.text = calculate(
                             panelTextView.text.toString() + " $buttonText ")
                 }
                 "+", "-", "×", "÷", "^" -> {
-                    panelTextView.text = rpnCalculate(
+                    panelTextView.text = calculate(
                             panelTextView.text.toString() + " $buttonText ENTR")
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                     val modeText = if (angleIsDegrees) "DEG" else "RAD"
-                    panelTextView.text = rpnCalculate(
+                    panelTextView.text = calculate(
                             panelTextView.text.toString() + " $modeText $buttonText ENTR")
                 }
                 else -> Log.d("btnOnClick", "$buttonText ignored")
@@ -171,10 +171,14 @@ class MainActivity : AppCompatActivity() {
         setTitle(getString(R.string.app_label))
         return true
     }
+    private fun settingsDialog() : Boolean {
+        return true
+    }
     // Default menu handler.  As long as a menu item has an ID here, it
     // gets handled here.
     override fun onOptionsItemSelected(item: MenuItem) :Boolean {
         when (item.itemId) {
+            R.id.get_app_settings -> return settingsDialog()
             R.id.build_info -> return buildInfoDialog()
             R.id.release_info_item -> return displayReleaseInfo(false)
             R.id.menu_about -> return showAboutDialog()

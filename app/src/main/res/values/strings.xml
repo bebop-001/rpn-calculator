@@ -3,4 +3,6 @@
     <string name="about">About</string>
     <string name="build_info">Build Info</string>
     <string name="release_info">Release Info</string>
+    <string name="cancel">Cancel</string>
+    <string name="settings">App Settings</string>
 </resources>
