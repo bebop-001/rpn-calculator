@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     }
     private lateinit var panelTextView: TextView
     private var shiftIsUp = true
+    private var shiftLock = false
     private var angleIsDegrees = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,10 +40,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         _sharedPreferences = getSharedPreferences(
                 "user_prefs.txt", MODE_PRIVATE)
-        shiftIsUp = sharedPreferences.getBoolean("shiftIsUp", true)
-        setShiftKey(shiftIsUp)
         angleIsDegrees = sharedPreferences.getBoolean("angleIsDegrees", true)
         panelTextView = findViewById(R.id.panelTextView)
+
+        shift_key.setOnLongClickListener {
+            Toast.makeText(this, "Long click detected", Toast.LENGTH_SHORT).show()
+            shiftLock = !shiftLock
+            shiftIsUp = !shiftLock
+            setShiftKey(shiftIsUp)
+            true
+        }
     }
 
     var rpnStack = Stack<RpnToken>()
@@ -54,7 +61,8 @@ class MainActivity : AppCompatActivity() {
         accumulator = ""
         return newStack
     }
-
+    val shiftedButtonIds = arrayOf(R.id.sine_button,
+        R.id.cosine_button, R.id.tangent_button, R.id.drop_button)
     fun setShiftKey(isUp: Boolean) {
         fun Button.setButton(textIn: String, textColor: Int, tag: String = "") {
             text = textIn
@@ -62,9 +70,6 @@ class MainActivity : AppCompatActivity() {
             if (tag.isNotEmpty())
                 this.tag = tag
         }
-        sharedPreferences.edit()
-                .putBoolean("shiftIsUp", isUp)
-                .apply()
         val textColor = ContextCompat.getColor(
                 this,
                 if (isUp) android.R.color.white
@@ -137,8 +142,10 @@ class MainActivity : AppCompatActivity() {
                             .apply()
                 }
                 "⇳SHFT" -> {
-                    shiftIsUp = !shiftIsUp
-                    setShiftKey(shiftIsUp)
+                    if (!shiftLock) {
+                        shiftIsUp = !shiftIsUp
+                        setShiftKey(shiftIsUp)
+                    }
                 }
                 "PI", "π" -> {
                     if (accumulator.isNotEmpty()) {
@@ -187,6 +194,12 @@ class MainActivity : AppCompatActivity() {
                 }
                 else -> Log.d("btnOnClick", "$buttonText ignored")
             }
+            // if this a shifted key and shift is down and shift lock is off,
+            // turn shift off.
+            if (!shiftLock && !shiftIsUp && shiftedButtonIds.contains(v.id)) {
+                shiftIsUp = true
+                setShiftKey(shiftIsUp)
+            }
         }
         catch (e: Exception) {
             Toast.makeText(this, "Error: $e", Toast.LENGTH_LONG).show()
@@ -223,7 +236,7 @@ class MainActivity : AppCompatActivity() {
         super.onAttachedToWindow()
         // Show the release info if this is an upgrade.
         val CURRENT_VERSION = "currentVersion"
-        val curVersion: Int = com.kana_tutor.rpncalc.MainActivity.sharedPreferences.getInt(CURRENT_VERSION, 0)
+        val curVersion: Int = sharedPreferences.getInt(CURRENT_VERSION, 0)
         Log.d("showUpdateReleaseInfo",
                 java.lang.String.format(
                         "current:%s, new:%s",
