@@ -61,7 +61,7 @@ class RpnParser private constructor() {
             fun Double.degreesToRadians(): Double = this * kotlin.math.PI / 180
             fun Double.radiansToDegrees(): Double  = this * 180 / kotlin.math.PI
             if (inStack.isEmpty()) return Stack<RpnToken>()
-            println("For: ${inStack.map{"$it"}}")
+            println("Trace: For: ${inStack.map{"$it"}}")
             when {
                 inStack.lastEquals("CHS")  -> {
                     inStack.pop()
@@ -80,13 +80,14 @@ class RpnParser private constructor() {
                 }
                 inStack.lastEquals("CLR")  -> inStack.clear()
             }
-            println("after preprocess: ${inStack.map{"$it"}}")
+            println("Trace: after preprocess: ${inStack.map{"$it"}}")
             val outStack = Stack<RpnToken>()
             var angleIsDegrees = false
             while (inStack.size > 0) {
                 var next = inStack.shift()
                 var (token, value) = next
-                println("next:$next inStack:${inStack.map{"$it"}} outStack:${outStack.map{"$it"}}")
+                println("Trace: next:$next inStack:${inStack.map{"$it"}} " +
+                        "outStack:${outStack.map{"$it"}}")
                 when (token) {
                     // op that expects two floats on stack.
                     "+", "-", "×", "*", "÷", "/", "^" -> {
@@ -99,7 +100,6 @@ class RpnParser private constructor() {
                             "÷", "/" -> outStack.pushD(d2 / d1)
                             "^"      -> outStack.pushD(d2.pow(d1))
                         }
-                        println(" $token     Apply op to top of stack    $outStack")
                     }
                     "RAD"                             -> {
                         angleIsDegrees = false
@@ -122,7 +122,7 @@ class RpnParser private constructor() {
                         outStack.pushD(result)
                     }
                     "ASIN", "ACOS", "ATAN"            -> {
-                        var value = inStack.popD()
+                        var value = outStack.popD()
                         if (angleIsDegrees)
                             value = value.degreesToRadians()
                         var rv = when (token) {
@@ -153,7 +153,7 @@ class RpnParser private constructor() {
                     }
                 }
             }
-            println("return: ${outStack.map{it}}")
+            println("Trace: return: ${outStack.map{it}}")
             return outStack
         }
     }
