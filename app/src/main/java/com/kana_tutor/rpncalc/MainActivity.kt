@@ -22,6 +22,7 @@ import kotlinx.android.synthetic.main.keyboard_layout.*
 import java.util.*
 
 import com.kana_tutor.rpncalc.RpnParser.*
+import com.kana_tutor.rpncalc.kanautils.doubleClickToExit
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -235,5 +236,7 @@ class MainActivity : AppCompatActivity() {
                     .apply()
         }
     }
-
+    override fun onBackPressed() {
+        doubleClickToExit(this)
+    }
 }
