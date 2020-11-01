@@ -1,4 +1,4 @@
-@file:Suppress("unused", "unused", "unused", "ObjectPropertyName")
+@file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName")
 
 package com.kana_tutor.rpncalc
 
@@ -52,18 +52,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    var rpnStack = Stack<RpnToken>()
-    var accumulator = ""
+    private var rpnStack = Stack<RpnToken>()
+    private var accumulator = ""
 
     private fun calculate(toCalculate: Stack<RpnToken>) : Stack<RpnToken> {
         val newStack =  RpnParser.rpnCalculate(toCalculate)
-        panelTextView.text = newStack.map{it.token}.joinToString("\n") + "\n"
+        panelTextView.text = newStack.joinToString("\n") { it.token } + "\n"
         accumulator = ""
         return newStack
     }
-    val shiftedButtonIds = arrayOf(R.id.sine_button,
+    private val shiftedButtonIds = arrayOf(R.id.sine_button,
         R.id.cosine_button, R.id.tangent_button, R.id.drop_button)
-    fun setShiftKey(isUp: Boolean) {
+    private fun setShiftKey(isUp: Boolean) {
         fun Button.setButton(textIn: String, textColor: Int, tag: String = "") {
             text = textIn
             setTextColor(textColor)
@@ -111,7 +111,6 @@ class MainActivity : AppCompatActivity() {
             panelTextView.text = t + str
             return str
         }
-        val cls = v.javaClass.simpleName.toString()
         val buttonText =  if (v.tag != null) v.tag.toString()
             else (v as Button).text.toString()
 
@@ -208,8 +207,8 @@ class MainActivity : AppCompatActivity() {
         // Default menu.  Unless a class implements its own onCreateOptionsMenu
     // method, it gets menu items defined in the menu/base_activity
     override fun onCreateOptionsMenu(menu: Menu) :Boolean {
-        getMenuInflater().inflate(R.menu.main_menu, menu)
-        setTitle(getString(R.string.app_label))
+        menuInflater.inflate(R.menu.main_menu, menu)
+            title = getString(R.string.app_label)
         return true
     }
     private fun settingsDialog() : Boolean {
@@ -244,7 +243,7 @@ class MainActivity : AppCompatActivity() {
         )
         if (curVersion != BuildConfig.VERSION_CODE) {
             displayReleaseInfo(true)
-            com.kana_tutor.rpncalc.MainActivity.sharedPreferences.edit()
+            sharedPreferences.edit()
                     .putInt(CURRENT_VERSION, BuildConfig.VERSION_CODE)
                     .apply()
         }
