@@ -33,6 +33,7 @@
                 style="@style/operation_button"
                 android:text="DEG" />
             <Button
+                android:id="@+id/shift_key"
                 style="@style/operation_button"
                 android:text="⇳SHFT" />
         </LinearLayout>

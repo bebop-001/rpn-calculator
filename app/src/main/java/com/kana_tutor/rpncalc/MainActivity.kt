@@ -4,6 +4,7 @@ package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
+import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -18,6 +19,9 @@ import com.kana_tutor.rpncalc.kanautils.buildInfoDialog
 import com.kana_tutor.rpncalc.kanautils.displayReleaseInfo
 import com.kana_tutor.rpncalc.kanautils.showAboutDialog
 import kotlinx.android.synthetic.main.keyboard_layout.*
+import java.util.*
+
+import com.kana_tutor.rpncalc.RpnParser.*
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -35,29 +39,75 @@ class MainActivity : AppCompatActivity() {
         _sharedPreferences = getSharedPreferences(
                 "user_prefs.txt", MODE_PRIVATE)
         shiftIsUp = sharedPreferences.getBoolean("shiftIsUp", true)
+        setShiftKey(shiftIsUp)
         angleIsDegrees = sharedPreferences.getBoolean("angleIsDegrees", true)
         panelTextView = findViewById(R.id.panelTextView)
     }
-    private fun calculate(toCalculate: String) : String {
-        return RpnParser.rpnCalculate(toCalculate)
+
+    var rpnStack = Stack<RpnToken>()
+    var accumulator = ""
+
+    private fun calculate(toCalculate: Stack<RpnToken>) : Stack<RpnToken> {
+        val newStack =  RpnParser.rpnCalculate(toCalculate)
+        panelTextView.text = newStack.map{it.token}.joinToString("\n") + "\n"
+        accumulator = ""
+        return newStack
     }
 
-    @SuppressLint("SetTextI18n")
-    fun btnOnClick(v: View) {
+    fun setShiftKey(isUp: Boolean) {
         fun Button.setButton(textIn: String, textColor: Int, tag: String = "") {
             text = textIn
             setTextColor(textColor)
             if (tag.isNotEmpty())
                 this.tag = tag
         }
-        val cls = v.javaClass.simpleName.toString()
-        val buttonText : String
-        buttonText = when (cls) {
-            "AppCompatImageButton" -> v.tag.toString()
-            "AppCompatButton" -> if (v.tag != null) v.tag.toString()
-            else (v as Button).text.toString()
-            else -> ""
+        sharedPreferences.edit()
+                .putBoolean("shiftIsUp", isUp)
+                .apply()
+        val textColor = ContextCompat.getColor(
+                this,
+                if (isUp) android.R.color.white
+                else R.color.shift_down_text
+        )
+        shift_key.setBackgroundColor(
+                ContextCompat.getColor(
+                        this,
+                        if (isUp) R.color.operation_button
+                        else R.color.shift_down_bg
+                )
+        )
+        tangent_button.setTextColor(textColor)
+        sine_button.setTextColor(textColor)
+        cosine_button.setTextColor(textColor)
+        drop_button.setTextColor(textColor)
+        shift_key.setTextColor(textColor)
+
+        if (isUp) {
+            tangent_button.text = "TAN"
+            sine_button.text = "SIN"
+            cosine_button.text = "COS"
+            drop_button.setButton("⇩", textColor, "DROP")
+            drop_button.setTypeface(null, Typeface.NORMAL)
         }
+        else {
+            tangent_button.setButton("ATAN", textColor)
+            sine_button.setButton("ASIN", textColor)
+            cosine_button.setButton("ACOS", textColor)
+            drop_button.setButton("π", textColor, "π")
+            drop_button.setTypeface(null, Typeface.BOLD)
+        }
+    }
+    @SuppressLint("SetTextI18n")
+    fun btnOnClick(v: View) {
+        @SuppressLint("SetTextI18n")
+        fun panelTextAppend(str : String) : String {
+            val t = panelTextView.text.toString()
+            panelTextView.text = t + str
+            return str
+        }
+        val cls = v.javaClass.simpleName.toString()
+        val buttonText =  if (v.tag != null) v.tag.toString()
+            else (v as Button).text.toString()
 
         try {
             when (buttonText) {
@@ -86,76 +136,53 @@ class MainActivity : AppCompatActivity() {
                             .apply()
                 }
                 "⇳SHFT" -> {
-                    if (shiftIsUp) {
-                        val textColor = ContextCompat.getColor(
-                                this, R.color.shift_down_text)
-                        shiftIsUp = false
-                        sharedPreferences.edit()
-                                .putBoolean("shiftIsUp", shiftIsUp)
-                                .apply()
-
-                        tangent_button.setButton("ATAN", textColor)
-                        sine_button.setButton("ASIN", textColor)
-                        cosine_button.setButton("ACOS", textColor)
-                        drop_button.setButton("π", textColor, "PI")
-                        (v as Button).setTextColor(textColor)
-
-                        v.setBackgroundColor(
-                                ContextCompat.getColor(
-                                        this, R.color.shift_down_bg))
-                    }
-                    else {
-                        shiftIsUp = true
-                        sharedPreferences.edit()
-                                .putBoolean("shiftIsUp", shiftIsUp)
-                                .apply()
-                        val textColor = ContextCompat.getColor(
-                                this, android.R.color.white)
-                        tangent_button.setButton("TAN", textColor)
-                        sine_button.setButton("SIN", textColor)
-                        cosine_button.setButton("COS", textColor)
-                        drop_button.setButton("⇩", textColor, "DROP")
-
-                        tangent_button.setTextColor(textColor)
-                        sine_button.setTextColor(textColor)
-                        cosine_button.setTextColor(textColor)
-                        (v as Button).setTextColor(textColor)
-
-                        tangent_button.text = "TAN"
-                        sine_button.text = "SIN"
-                        cosine_button.text = "COS"
-                        v.setBackgroundColor(
-                                ContextCompat.getColor(
-                                        this, R.color.operation_button))
-                    }
+                    shiftIsUp = !shiftIsUp
+                    setShiftKey(shiftIsUp)
                 }
-                "PI" -> panelTextView.text = panelTextView.text.toString() + " PI\n"
-                "CLR", "ENTR", "SWAP", "DROP" -> {
-                    panelTextView.text = calculate(
-                            panelTextView.text.toString() + " $buttonText")
+                "PI", "π" -> {
+                    if (accumulator.isNotEmpty()) {
+                        rpnStack.push(RpnToken(accumulator))
+                        accumulator = ""
+                    }
+                    rpnStack.push(RpnToken(buttonText))
+                    panelTextAppend(buttonText)
+                }
+                "CLR", "SWAP", "DROP" -> {
+                    if (accumulator.isNotEmpty()) {
+                        rpnStack.push(RpnToken(accumulator))
+                        accumulator = ""
+                    }
+                    rpnStack.push(RpnToken(buttonText))
+                    rpnStack = calculate(rpnStack)
+                }
+                "ENTR" -> {
+                    if (accumulator.isNotEmpty())
+                        rpnStack.push(RpnToken(accumulator))
+                    rpnStack = calculate(rpnStack)
                 }
                 "DEL" -> {
-                    val l = panelTextView.text.toString()
-                    if (!l.endsWith("\n") &&
-                            "[\\d.-]$".toRegex().find(l) != null)
-                        panelTextView.text = l.dropLast(1)
+                    if (accumulator.isNotEmpty())
+                        accumulator.dropLast(1)
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." -> {
-                    panelTextView.text = panelTextView.text.toString() + buttonText
+                    panelTextAppend(buttonText)
+                    accumulator += buttonText
                 }
                 // change sign
                 "CHS" -> {
-                    panelTextView.text = calculate(
-                            panelTextView.text.toString() + " $buttonText ")
+                    rpnStack.push(RpnToken(buttonText))
+                    rpnStack = calculate(rpnStack)
                 }
                 "+", "-", "×", "÷", "^" -> {
-                    panelTextView.text = calculate(
-                            panelTextView.text.toString() + " $buttonText ENTR")
+                    if (accumulator.isNotEmpty()) rpnStack.push(RpnToken(accumulator))
+                    rpnStack.push(RpnToken(buttonText))
+                    rpnStack = calculate(rpnStack)
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
-                    val modeText = if (angleIsDegrees) "DEG" else "RAD"
-                    panelTextView.text = calculate(
-                            panelTextView.text.toString() + " $modeText $buttonText ENTR")
+                    if (accumulator.isNotEmpty()) rpnStack.push(RpnToken(accumulator))
+                    rpnStack.push(RpnToken(if (angleIsDegrees) "DEG" else "RAD"))
+                    rpnStack.push(RpnToken(buttonText))
+                    rpnStack = calculate(rpnStack)
                 }
                 else -> Log.d("btnOnClick", "$buttonText ignored")
             }
