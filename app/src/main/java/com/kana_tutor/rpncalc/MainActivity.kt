@@ -168,8 +168,11 @@ class MainActivity : AppCompatActivity() {
                     rpnStack = calculate(rpnStack)
                 }
                 "DEL" -> {
-                    if (accumulator.isNotEmpty())
-                        accumulator.dropLast(1)
+                    if (accumulator.isNotEmpty()) {
+                        Log.d("acc", accumulator)
+                        accumulator = accumulator.dropLast(1)
+                        panelTextView.text = panelTextView.text.toString().dropLast(1)
+                    }
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." -> {
                     panelTextAppend(buttonText)
