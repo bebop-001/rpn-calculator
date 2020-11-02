@@ -1,10 +1,10 @@
+@file:Suppress("unused")
+
 package com.kana_tutor.rpncalc
 
-import android.util.Log
-import java.util.*
 import java.text.DecimalFormat
+import java.util.*
 import kotlin.math.cos
-
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.tan
@@ -18,6 +18,13 @@ class RpnParser private constructor() {
     companion object {
         private var digitsFormatIsEnabled = true
         private var digitsFormat = "#,##0.000"
+        val digitsFormatting
+        get() : Boolean  = digitsFormatIsEnabled
+        fun setDigitsFormatting(enable : Boolean, digits: Int = 4, commas : Boolean = true) {
+            digitsFormatIsEnabled = enable
+            digitsFormat = if (commas) "#,##0" else "0" +
+                    if (digits > 0) "." + "0".repeat(digits) else ""
+        }
 
         // from https://rosettacode.org/wiki/Parsing/RPN_calculator_algorithm
         fun rpnCalculate(inStack : Stack<RpnToken>): Stack<RpnToken> {
@@ -29,7 +36,7 @@ class RpnParser private constructor() {
                 return value
             }
 
-            fun Double.toFormatedString(): String {
+            fun Double.toFormattedString(): String {
                 return if (digitsFormatIsEnabled) {
                     DecimalFormat(digitsFormat)
                             .format(this)
@@ -41,7 +48,10 @@ class RpnParser private constructor() {
                 str.split(",").joinToString().toDouble()
 
             fun Stack<RpnToken>.pushD(d: Double) : RpnToken {
-                val newToken = RpnToken(d.toFormatedString(), d)
+                val newToken =  if (digitsFormatIsEnabled)
+                        RpnToken(d.toFormattedString(), d)
+                    else
+                        RpnToken(d.toString(), d)
                 this.push(newToken)
                 return newToken
             }
@@ -54,7 +64,7 @@ class RpnParser private constructor() {
             fun RpnToken.chs() : RpnToken {
                 var(_, value) = this
                 value *= -1
-                return RpnToken(value.toFormatedString(), value)
+                return RpnToken(value.toFormattedString(), value)
             }
             fun Stack<RpnToken>.shift() : RpnToken = this.removeAt(0)
             fun Stack<RpnToken>.unshift(tok :RpnToken)  = this.add(0, tok)
@@ -84,8 +94,8 @@ class RpnParser private constructor() {
             val outStack = Stack<RpnToken>()
             var angleIsDegrees = false
             while (inStack.size > 0) {
-                var next = inStack.shift()
-                var (token, value) = next
+                val next = inStack.shift()
+                val token = next.token
                 println("Trace: next:$next inStack:${inStack.map{"$it"}} " +
                         "outStack:${outStack.map{"$it"}}")
                 when (token) {
