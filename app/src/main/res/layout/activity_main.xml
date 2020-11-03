@@ -10,18 +10,23 @@
     android:paddingLeft="8dp"
     android:paddingRight="8dp"
     tools:context="com.kana_tutor.rpncalc.MainActivity">
-
-    <TextView
-        android:id="@+id/panelTextView"
+    <ScrollView
+        android:id="@+id/panel_scroll"
+        android:layout_weight="1"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:gravity="bottom|end"
-        android:layout_weight="1"
-        android:background="@android:color/white"
-        android:padding="5dp"
-        android:textColor="@android:color/black"
-        android:scrollbars="vertical"
-        android:textSize="24sp" />
+        android:fillViewport="true">
+        <TextView
+            android:id="@+id/panelTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="bottom|end"
+            android:background="@android:color/white"
+            android:padding="5dp"
+            android:textColor="@android:color/black"
+            android:scrollbars="vertical"
+            android:textSize="24sp" />
+    </ScrollView>
 
     <include
         android:id="@+id/keyboard_layout"

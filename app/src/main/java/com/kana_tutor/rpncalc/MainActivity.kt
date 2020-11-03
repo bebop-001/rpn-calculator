@@ -11,18 +11,20 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
+import android.widget.ScrollView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.kana_tutor.rpncalc.RpnParser.RpnToken
 import com.kana_tutor.rpncalc.kanautils.buildInfoDialog
 import com.kana_tutor.rpncalc.kanautils.displayReleaseInfo
+import com.kana_tutor.rpncalc.kanautils.doubleClickToExit
 import com.kana_tutor.rpncalc.kanautils.showAboutDialog
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.keyboard_layout.*
+import kotlinx.android.synthetic.main.number_format.view.*
 import java.util.*
 
-import com.kana_tutor.rpncalc.RpnParser.*
-import com.kana_tutor.rpncalc.kanautils.doubleClickToExit
-import kotlinx.android.synthetic.main.number_format.view.*
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -46,9 +48,9 @@ class MainActivity : AppCompatActivity() {
         numberFormattingEnabled =
                 sharedPreferences.getBoolean("numberFormattingEnabled", true)
         RpnParser.setDigitsFormatting(
-            numberFormattingEnabled,
-            sharedPreferences.getInt("digitsAfterDecimal", 3),
-            sharedPreferences.getBoolean("commasEnabled", true)
+                numberFormattingEnabled,
+                sharedPreferences.getInt("digitsAfterDecimal", 3),
+                sharedPreferences.getBoolean("commasEnabled", true)
         )
         menuNumberFormatString =
             if (numberFormattingEnabled)
@@ -58,7 +60,8 @@ class MainActivity : AppCompatActivity() {
         panelTextView = findViewById(R.id.panelTextView)
 
         shift_key.setOnLongClickListener {
-            Toast.makeText(this, "Long click detected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Long click detected",
+                    Toast.LENGTH_SHORT).show()
             shiftLock = !shiftLock
             shiftIsUp = !shiftLock
             setShiftKey(shiftIsUp)
@@ -72,11 +75,12 @@ class MainActivity : AppCompatActivity() {
     private fun calculate(toCalculate: Stack<RpnToken>) : Stack<RpnToken> {
         val newStack =  RpnParser.rpnCalculate(toCalculate)
         panelTextView.text = newStack.joinToString("\n") { it.token } + "\n"
-        accumulator = ""
+        panel_scroll.post({
+            panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) })
         return newStack
     }
     private val shiftedButtonIds = arrayOf(R.id.sine_button,
-        R.id.cosine_button, R.id.tangent_button, R.id.drop_button)
+            R.id.cosine_button, R.id.tangent_button, R.id.drop_button)
     private fun setShiftKey(isUp: Boolean) {
         fun Button.setButton(textIn: String, textColor: Int, tag: String = "") {
             text = textIn
@@ -120,9 +124,11 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     fun btnOnClick(v: View) {
         @SuppressLint("SetTextI18n")
-        fun panelTextAppend(str : String) : String {
+        fun panelTextAppend(str: String) : String {
             val t = panelTextView.text.toString()
             panelTextView.text = t + str
+            panel_scroll.post({
+                panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) })
             return str
         }
         val buttonText =  if (v.tag != null) v.tag.toString()
@@ -180,12 +186,14 @@ class MainActivity : AppCompatActivity() {
                     if (accumulator.isNotEmpty())
                         rpnStack.push(RpnToken(accumulator))
                     rpnStack = calculate(rpnStack)
+                    accumulator = ""
                 }
                 "DEL" -> {
                     if (accumulator.isNotEmpty()) {
                         Log.d("acc", accumulator)
                         accumulator = accumulator.dropLast(1)
-                        panelTextView.text = panelTextView.text.toString().dropLast(1)
+                        panelTextView.text =
+                            panelTextView.text.toString().dropLast(1)
                     }
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." -> {
@@ -198,12 +206,14 @@ class MainActivity : AppCompatActivity() {
                     rpnStack = calculate(rpnStack)
                 }
                 "+", "-", "×", "÷", "^" -> {
-                    if (accumulator.isNotEmpty()) rpnStack.push(RpnToken(accumulator))
+                    if (accumulator.isNotEmpty())
+                        rpnStack.push(RpnToken(accumulator))
                     rpnStack.push(RpnToken(buttonText))
                     rpnStack = calculate(rpnStack)
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
-                    if (accumulator.isNotEmpty()) rpnStack.push(RpnToken(accumulator))
+                    if (accumulator.isNotEmpty())
+                        rpnStack.push(RpnToken(accumulator))
                     rpnStack.push(RpnToken(if (angleIsDegrees) "DEG" else "RAD"))
                     rpnStack.push(RpnToken(buttonText))
                     rpnStack = calculate(rpnStack)
@@ -229,7 +239,7 @@ class MainActivity : AppCompatActivity() {
         return true
     }
     private fun numberFormatControl(item: MenuItem) : Boolean {
-        fun setNewFormat (digits : Int, commas:Boolean) {
+        fun setNewFormat(digits: Int, commas: Boolean) {
             sharedPreferences.edit()
                 .putBoolean("numberFormattingEnabled", true)
                 .putInt("digitsAfterDecimal", digits)
@@ -257,21 +267,21 @@ class MainActivity : AppCompatActivity() {
                     v.scroll_title.text = digitsFormat.format(progress)
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar) { }
+                override fun onStopTrackingTouch(seekBar: SeekBar) {}
             })
             val cb = v.commas_enabled!!
             cb.isChecked = RpnParser.commasEnabled
             cb.setOnClickListener { view ->
-                with (view as CheckedTextView) {
+                with(view as CheckedTextView) {
                     isChecked = !isChecked
                 }
             }
             AlertDialog.Builder(this)
                 .setTitle(R.string.set_number_format)
                 .setView(v)
-                .setPositiveButton(R.string.done) {dialog,_ ->
+                .setPositiveButton(R.string.done) { dialog, _ ->
                     setNewFormat(
-                        v.digits_after_decimal.progress, v.commas_enabled.isChecked
+                            v.digits_after_decimal.progress, v.commas_enabled.isChecked
                     )
                     dialog.dismiss()
                 }
