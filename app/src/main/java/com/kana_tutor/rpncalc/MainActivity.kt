@@ -10,9 +10,8 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.kana_tutor.rpncalc.kanautils.buildInfoDialog
@@ -23,17 +22,20 @@ import java.util.*
 
 import com.kana_tutor.rpncalc.RpnParser.*
 import com.kana_tutor.rpncalc.kanautils.doubleClickToExit
+import kotlinx.android.synthetic.main.number_format.view.*
 
 class MainActivity : AppCompatActivity() {
     companion object {
         private lateinit var _sharedPreferences : SharedPreferences
-        val sharedPreferences : SharedPreferences
+    val sharedPreferences : SharedPreferences
             get() = _sharedPreferences
     }
     private lateinit var panelTextView: TextView
     private var shiftIsUp = true
     private var shiftLock = false
     private var angleIsDegrees = true
+    private var numberFormattingEnabled = true
+    private var menuNumberFormatString = R.string.number_formatting_enabled
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +43,18 @@ class MainActivity : AppCompatActivity() {
         _sharedPreferences = getSharedPreferences(
                 "user_prefs.txt", MODE_PRIVATE)
         angleIsDegrees = sharedPreferences.getBoolean("angleIsDegrees", true)
+        numberFormattingEnabled =
+                sharedPreferences.getBoolean("numberFormattingEnabled", true)
+        RpnParser.setDigitsFormatting(
+            numberFormattingEnabled,
+            sharedPreferences.getInt("digitsAfterDecimal", 3),
+            sharedPreferences.getBoolean("commasEnabled", true)
+        )
+        menuNumberFormatString =
+            if (numberFormattingEnabled)
+                R.string.number_formatting_enabled
+            else
+                R.string.number_formatting_disabled
         panelTextView = findViewById(R.id.panelTextView)
 
         shift_key.setOnLongClickListener {
@@ -214,14 +228,70 @@ class MainActivity : AppCompatActivity() {
             title = getString(R.string.app_label)
         return true
     }
-    private fun settingsDialog() : Boolean {
+    private fun numberFormatControl(item: MenuItem) : Boolean {
+        fun setNewFormat (digits : Int, commas:Boolean) {
+            sharedPreferences.edit()
+                .putBoolean("numberFormattingEnabled", true)
+                .putInt("digitsAfterDecimal", digits)
+                .putBoolean("commasEnabled", commas)
+                .apply()
+            numberFormattingEnabled = true
+            RpnParser.setDigitsFormatting(true, digits, commas)
+        }
+        val newFormat =
+            if (menuNumberFormatString == R.string.number_formatting_disabled)
+                R.string.number_formatting_enabled
+            else
+                R.string.number_formatting_disabled
+        menuNumberFormatString = newFormat
+        item.setTitle(newFormat)
+        if (newFormat == R.string.number_formatting_enabled) {
+            val v = layoutInflater.inflate(R.layout.number_format, null)
+            val sb = v.digits_after_decimal!!
+            sb.progress = RpnParser.digitsAfterDecimal
+            val digitsFormat = getString(R.string.digits_after_decimal)
+            v.scroll_title.text = digitsFormat.format(RpnParser.digitsAfterDecimal)
+            // read digits.
+            sb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    v.scroll_title.text = digitsFormat.format(progress)
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar) { }
+            })
+            val cb = v.commas_enabled!!
+            cb.isChecked = RpnParser.commasEnabled
+            cb.setOnClickListener { view ->
+                with (view as CheckedTextView) {
+                    isChecked = !isChecked
+                }
+            }
+            AlertDialog.Builder(this)
+                .setTitle(R.string.set_number_format)
+                .setView(v)
+                .setPositiveButton(R.string.done) {dialog,_ ->
+                    setNewFormat(
+                        v.digits_after_decimal.progress, v.commas_enabled.isChecked
+                    )
+                    dialog.dismiss()
+                }
+                .show()
+        }
+        else {
+            RpnParser.setDigitsFormatting(false)
+        }
         return true
     }
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        menu!!.findItem(R.id.number_formatting)!!.setTitle(menuNumberFormatString)
+        return true
+    }
+
     // Default menu handler.  As long as a menu item has an ID here, it
     // gets handled here.
     override fun onOptionsItemSelected(item: MenuItem) :Boolean {
         when (item.itemId) {
-            R.id.get_app_settings -> return settingsDialog()
+            R.id.number_formatting -> return numberFormatControl(item)
             R.id.build_info -> return buildInfoDialog()
             R.id.release_info_item -> return displayReleaseInfo(false)
             R.id.menu_about -> return showAboutDialog()
