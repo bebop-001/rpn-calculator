@@ -35,6 +35,7 @@
             <Button
                 android:id="@+id/shift_key"
                 style="@style/operation_button"
+                android:textSize="16sp"
                 android:text="⇳SHFT" />
         </LinearLayout>
         <!-- Column 2 -->
