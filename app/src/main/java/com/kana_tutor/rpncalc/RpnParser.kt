@@ -167,6 +167,12 @@ class RpnParser private constructor() {
                             rv = rv.radiansToDegrees()
                         outStack.pushD(rv)
                     }
+                    "DUP"                             -> {
+                        val t = outStack.pop()
+                        outStack.push(t)
+                        outStack.push(t)
+                    }
+
                     // push an empty token on the stack. ENTR caused call
                     // to parser.  That's all that we need.
                     "ENTR" -> {

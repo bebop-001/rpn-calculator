@@ -7,6 +7,8 @@ import android.content.SharedPreferences
 import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
+import android.view.ContextMenu
+import android.view.ContextMenu.ContextMenuInfo
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -71,8 +73,50 @@ class MainActivity : AppCompatActivity() {
 
     private var rpnStack = Stack<RpnToken>()
     private var accumulator = ""
+    // used to return result of context menu operation
+    // set in onCreateContextMenu, used/cleared in onContextItemSelected
+    var returnResult : ((String) -> Unit)? = null
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.clear_item -> returnResult?.invoke("CLR\n")
+            R.id.swap_item -> returnResult?.invoke("SWAP\n")
+            R.id.drop_item -> returnResult?.invoke("DROP")
+            R.id.duplicate_item -> returnResult?.invoke("DUP")
+            else ->  return super.onContextItemSelected(item)
+        }
+        returnResult = null
+        return true
+    }
+    override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenuInfo?) {
+        super.onCreateContextMenu(menu, v, menuInfo)
+        val buttonText =
+            if (v.tag != null) v.tag.toString()
+            else (v as Button).text.toString()
+        if (buttonText == "STK") { // stack operation
+            menuInflater.inflate(R.menu.stack_operations_menu, menu)
+            menu.setHeaderTitle("Stack operations")
+        }
+        else {
+            Log.d("onCreateContextMenu", "No text or tag")
+        }
+    }
+    fun getStackOperation(view : View, toReturn : (String) -> Unit) {
+        registerForContextMenu(view)
+        openContextMenu(view)
+        returnResult = toReturn // to return the result of the operation.
+    }
+    private fun calculate(toCalculate: Stack<RpnToken>, text : String = "") : Stack<RpnToken> {
+        val newTokens = "$accumulator\n$text"
+                .split("\n")
+                .filter{!"^\\s*#".toRegex().matches(it)}
+                .joinToString("\n")
+                .split("\\s+".toRegex())
+                .filter{it.isNotEmpty()}
+                .map{RpnToken(it)}
 
-    private fun calculate(toCalculate: Stack<RpnToken>) : Stack<RpnToken> {
+
+        accumulator = ""
+        toCalculate.addAll(newTokens)
         val newStack =  RpnParser.rpnCalculate(toCalculate)
         panelTextView.text = newStack.joinToString("\n") { it.token } + "\n"
         panel_scroll.post{ // scroll to the bottom of the screen.
@@ -80,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         return newStack
     }
     private val shiftedButtonIds = arrayOf(R.id.sine_button,
-            R.id.cosine_button, R.id.tangent_button, R.id.drop_button)
+            R.id.cosine_button, R.id.tangent_button)
     private fun setShiftKey(isUp: Boolean) {
         fun Button.setButton(textIn: String, textColor: Int, tag: String = "") {
             text = textIn
@@ -103,22 +147,17 @@ class MainActivity : AppCompatActivity() {
         tangent_button.setTextColor(textColor)
         sine_button.setTextColor(textColor)
         cosine_button.setTextColor(textColor)
-        drop_button.setTextColor(textColor)
         shift_key.setTextColor(textColor)
 
         if (isUp) {
             tangent_button.text = "TAN"
             sine_button.text = "SIN"
             cosine_button.text = "COS"
-            drop_button.setButton("⇩", textColor, "DROP")
-            drop_button.setTypeface(null, Typeface.NORMAL)
         }
         else {
             tangent_button.setButton("ATAN", textColor)
             sine_button.setButton("ASIN", textColor)
             cosine_button.setButton("ACOS", textColor)
-            drop_button.setButton("π", textColor, "π")
-            drop_button.setTypeface(null, Typeface.BOLD)
         }
     }
     @SuppressLint("SetTextI18n")
@@ -174,26 +213,23 @@ class MainActivity : AppCompatActivity() {
                     rpnStack.push(RpnToken(buttonText))
                     panelTextAppend(buttonText)
                 }
-                "CLR", "SWAP", "DROP" -> {
-                    if (accumulator.isNotEmpty()) {
-                        rpnStack.push(RpnToken(accumulator))
-                        accumulator = ""
-                    }
-                    rpnStack.push(RpnToken(buttonText))
-                    rpnStack = calculate(rpnStack)
+                "CLR", "SWAP", "DROP", "DUP" -> {
+                    rpnStack = calculate(rpnStack, buttonText)
                 }
                 "ENTR" -> {
-                    if (accumulator.isNotEmpty())
-                        rpnStack.push(RpnToken(accumulator))
-                    rpnStack = calculate(rpnStack)
-                    accumulator = ""
+                    rpnStack = calculate(rpnStack, buttonText)
                 }
+                "STK" -> {
+                    getStackOperation(v){result ->
+                        rpnStack = calculate(rpnStack, result)
+                    }
+                }
+
                 "DEL" -> {
                     if (accumulator.isNotEmpty()) {
-                        Log.d("acc", accumulator)
                         accumulator = accumulator.dropLast(1)
                         panelTextView.text =
-                            panelTextView.text.toString().dropLast(1)
+                                panelTextView.text.toString().dropLast(1)
                     }
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." -> {
@@ -202,21 +238,14 @@ class MainActivity : AppCompatActivity() {
                 }
                 // change sign
                 "CHS" -> {
-                    rpnStack.push(RpnToken(buttonText))
-                    rpnStack = calculate(rpnStack)
+                    rpnStack = calculate(rpnStack, buttonText)
                 }
                 "+", "-", "×", "÷", "^" -> {
-                    if (accumulator.isNotEmpty())
-                        rpnStack.push(RpnToken(accumulator))
-                    rpnStack.push(RpnToken(buttonText))
-                    rpnStack = calculate(rpnStack)
+                    rpnStack = calculate(rpnStack,buttonText)
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
-                    if (accumulator.isNotEmpty())
-                        rpnStack.push(RpnToken(accumulator))
-                    rpnStack.push(RpnToken(if (angleIsDegrees) "DEG" else "RAD"))
-                    rpnStack.push(RpnToken(buttonText))
-                    rpnStack = calculate(rpnStack)
+                    val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
+                    rpnStack = calculate(rpnStack, "$angleUnits\n$buttonText")
                 }
                 else -> Log.d("btnOnClick", "$buttonText ignored")
             }
@@ -266,6 +295,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                     v.scroll_title.text = digitsFormat.format(progress)
                 }
+
                 override fun onStartTrackingTouch(seekBar: SeekBar) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar) {}
             })
