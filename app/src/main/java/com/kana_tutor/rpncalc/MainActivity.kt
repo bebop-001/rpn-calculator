@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity() {
                 panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) }
             return str
         }
-        val buttonText =  if (v.tag != null) v.tag.toString()
+        var buttonText =  if (v.tag != null) v.tag.toString()
             else (v as Button).text.toString()
 
         try {
@@ -232,7 +232,11 @@ class MainActivity : AppCompatActivity() {
                                 panelTextView.text.toString().dropLast(1)
                     }
                 }
-                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." -> {
+                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
+                    if (buttonText == "E") {
+                        if (accumulator.contains("E"))
+                            buttonText = ""
+                    }
                     panelTextAppend(buttonText)
                     accumulator += buttonText
                 }
