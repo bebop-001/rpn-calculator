@@ -6,6 +6,6 @@
     <color name="bgCalc">#272822</color>
     <color name="buttonBg">#434343</color>
     <color name="operation_button">#636363</color>
-    <color name="shift_down_bg">#9C9C9C</color>
-    <color name="shift_down_text">#FFB300</color>
+    <color name="shift_down_bg">#7E7D7D</color>
+    <color name="shift_down_text">#F4511E</color>
 </resources>

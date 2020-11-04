@@ -14,10 +14,14 @@
             android:layout_height="wrap_content">
             <Button
                 style="@style/operation_button"
-                android:text="CLR" />
+                android:text="DEL" />
+            <Button
+                android:id="@+id/deg_rad_button"
+                style="@style/operation_button"
+                android:text="DEG" />
             <Button
                 style="@style/operation_button"
-                android:text="DEL" />
+                android:text="CLR" />
             <Button
                 style="@style/operation_button"
                 android:tag="SWAP"
@@ -29,10 +33,6 @@
                 android:text="⇩"
                 android:textSize="20sp" />
             <Button
-                android:id="@+id/deg_rad_button"
-                style="@style/operation_button"
-                android:text="DEG" />
-            <Button
                 android:id="@+id/shift_key"
                 style="@style/operation_button"
                 android:text="⇳SHFT" />
@@ -42,12 +42,12 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
+                style="@style/operation_button"
+                android:text="?" />
+            <Button
                 android:id="@+id/sine_button"
                 style="@style/operation_button"
                 android:text="SIN" />
-            <Button
-                style="@style/operation_button"
-                android:text="?" />
             <Button
                 style="@style/number_button"
                 android:text="7" />
@@ -66,12 +66,12 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
+                style="@style/operation_button"
+                android:text="?" />
+            <Button
                 android:id="@+id/cosine_button"
                 style="@style/operation_button"
                 android:text="COS" />
-            <Button
-                style="@style/operation_button"
-                android:text="?" />
             <Button
                 style="@style/number_button"
                 android:text="8" />
@@ -90,12 +90,13 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
+                android:id="@+id/stack_operations"
+                style="@style/operation_button"
+                android:text="STK" />
+            <Button
                 android:id="@+id/tangent_button"
                 style="@style/operation_button"
                 android:text="TAN" />
-            <Button
-                style="@style/operation_button"
-                android:text="?" />
             <Button
                 style="@style/number_button"
                 android:text="9" />
@@ -115,21 +116,19 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
-                style="@style/operation_button"
+                style="@style/math_op_button"
                 android:text="^" />
             <Button
-                style="@style/operation_button"
+                style="@style/math_op_button"
                 android:text="÷" />
             <Button
-                style="@style/number_button"
-                android:background="@color/operation_button"
+                style="@style/math_op_button"
                 android:text="×" />
             <Button
-                style="@style/operation_button"
+                style="@style/math_op_button"
                 android:text="-" />
             <Button
-                style="@style/number_button"
-                android:background="@color/operation_button"
+                style="@style/math_op_button"
                 android:text="+" />
             <Button
                 style="@style/operation_button"

@@ -75,8 +75,8 @@ class MainActivity : AppCompatActivity() {
     private fun calculate(toCalculate: Stack<RpnToken>) : Stack<RpnToken> {
         val newStack =  RpnParser.rpnCalculate(toCalculate)
         panelTextView.text = newStack.joinToString("\n") { it.token } + "\n"
-        panel_scroll.post({
-            panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) })
+        panel_scroll.post{ // scroll to the bottom of the screen.
+            panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) }
         return newStack
     }
     private val shiftedButtonIds = arrayOf(R.id.sine_button,
@@ -127,8 +127,8 @@ class MainActivity : AppCompatActivity() {
         fun panelTextAppend(str: String) : String {
             val t = panelTextView.text.toString()
             panelTextView.text = t + str
-            panel_scroll.post({
-                panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) })
+            panel_scroll.post{ // scroll to the bottom of the screen.
+                panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) }
             return str
         }
         val buttonText =  if (v.tag != null) v.tag.toString()
