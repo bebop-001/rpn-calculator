@@ -11,4 +11,10 @@
     <string name="done">Done</string>
     <string name="enable_comma">Enable comma formatting</string>
     <string name="digits_after_decimal">Digits after decimal: %d</string>
+
+    <!-- Stack operations -->
+    <string name="clear">Clear Stack</string>
+    <string name="swap">Swap X⇆Y</string>
+    <string name="Drop">⇩ Drop bottom item</string>
+    <string name="Duplicate">⇉ Duplicate bottom item</string>
 </resources>

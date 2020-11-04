@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/clear_item"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/clear" />
+    <item
+        android:id="@+id/swap_item"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/swap" />
+    <item
+        android:id="@+id/drop_item"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/Drop" />
+    <item
+        android:id="@+id/duplicate_item"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/Duplicate" />
+
+</menu>
