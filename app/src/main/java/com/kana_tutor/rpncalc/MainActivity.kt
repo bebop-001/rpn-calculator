@@ -125,17 +125,15 @@ class MainActivity : AppCompatActivity() {
         panel_scroll.post{ // scroll to the bottom of the screen.
             panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) }
     }
-    private val shiftedButtonIds = arrayOf(R.id.sine_button,
-            R.id.cosine_button, R.id.tangent_button)
+    data class ButtonInfo(val id:Int, val button_up_txt:String, val button_down_txt:String)
+    val buttonInfo = arrayOf(
+            ButtonInfo(R.id.sine_button, "SIN", "ASIN"),
+            ButtonInfo(R.id.cosine_button, "COS", "ACOS"),
+            ButtonInfo(R.id.tangent_button, "TAN", "ATAN"),
+            ButtonInfo(R.id.shift_key, "⇳SHFT", "⇳SHFT"),
+            ButtonInfo(R.id.sto_rcl_button, "STO", "RCL")
+    )
     private fun setShiftKey(isUp: Boolean) {
-        data class ButtonInfo(val id:Int, val button_up_txt:String, val button_down_txt:String)
-        val buttonInfo = arrayOf(
-                ButtonInfo(R.id.sine_button, "SIN", "ASIN"),
-                ButtonInfo(R.id.cosine_button, "COS", "ACOS"),
-                ButtonInfo(R.id.tangent_button, "TAN", "ATAN"),
-                ButtonInfo(R.id.shift_key, "⇳SHFT", "⇳SHFT"),
-                ButtonInfo(R.id.sto_rcl_button, "STO", "RCL")
-        )
         val textColor = ContextCompat.getColor(
                 this,
                 if (isUp) android.R.color.white
@@ -253,7 +251,8 @@ class MainActivity : AppCompatActivity() {
             }
             // if this a shifted key and shift is down and shift lock is off,
             // turn shift off.
-            if (!shiftLock && !shiftIsUp && shiftedButtonIds.contains(v.id)) {
+            if (!shiftLock && !shiftIsUp && R.id.shift_key != v.id &&
+                    buttonInfo.filter{it.id == v.id}.size == 1) {
                 shiftIsUp = true
                 setShiftKey(shiftIsUp)
             }
