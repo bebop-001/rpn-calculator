@@ -2,6 +2,7 @@
 
 package com.kana_tutor.rpncalc
 
+import android.util.Log
 import java.lang.Double.NaN
 import java.lang.Double.isNaN
 import java.text.DecimalFormat
@@ -11,8 +12,11 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.tan
 
+class RpnParserException (message:String) : Exception(message)
+
 class RpnParser private constructor() {
     data class RpnToken(var token: String, var value : Double = NaN) {
+        val original = token
         init {
             if (isNaN(value)) {
                 try {
@@ -24,9 +28,13 @@ class RpnParser private constructor() {
                 }
             }
         }
-        override fun toString(): String {return "$token:$value"}
+        override fun toString(): String {return "$token:$value:$original"}
     }
     companion object {
+        private val registers = mutableMapOf<Int, Double>()
+        // return the registers as an array to protect from user.
+        fun getStored ()  = registers.map{it}.toTypedArray()
+        var storedChanged : (() -> Unit)? = null
         private var digitsFormatIsEnabled = true
         var digitsAfterDecimal = 3
             private set
@@ -129,6 +137,35 @@ class RpnParser private constructor() {
                             "×", "*" -> outStack.pushD(d2 * d1)
                             "÷", "/" -> outStack.pushD(d2 / d1)
                             "^"      -> outStack.pushD(d2.pow(d1))
+                        }
+                    }
+                    "STO" -> {
+                        val stoExceptionString =
+                            "Please select a register between 1 and 100.\nbad index:%s"
+                        val idxToken = outStack.pop()
+                        val newRegValue = outStack.pop().value
+                        val idx : Int
+                        try { idx = idxToken.original.toInt()}
+                        catch (e:Exception) {
+                            throw RpnParserException(
+                                    stoExceptionString.format(idxToken.original)
+                            )
+                        }
+                        if (idx < 1 || idx > 100)
+                            throw RpnParserException(
+                                    stoExceptionString.format(idxToken.original)
+                            )
+                        registers[idx] = newRegValue
+                    }
+                    "RCL" -> {
+                        val stoExceptionString =
+                                "Please select a register between 1 and 100.\nbad index:%s"
+                        try {
+                            val idx = outStack.pop().original.toInt()
+                            outStack.pushD(registers[idx]!!)
+                        }
+                        catch (e:java.lang.Exception) {
+                            RpnParserException("RCL FAILED:$e")
                         }
                     }
                     "RAD"                             -> {

@@ -26,8 +26,9 @@
                 style="@style/operation_button"
                 android:text="?" />
             <Button
+                android:id="@+id/sto_rcl_button"
                 style="@style/operation_button"
-                android:text="?" />
+                android:text="STO" />
             <Button
                 android:id="@+id/shift_key"
                 style="@style/operation_button"
@@ -38,9 +39,11 @@
         <LinearLayout
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
+
             <Button
                 style="@style/operation_button"
-                android:text="E" />
+                android:text="E"
+                android:textColor="@android:color/holo_orange_light" />
             <Button
                 android:id="@+id/sine_button"
                 style="@style/operation_button"
@@ -62,9 +65,11 @@
         <LinearLayout
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
+
             <Button
                 style="@style/operation_button"
-                android:text="π" />
+                android:text="π"
+                android:textColor="@android:color/holo_orange_light" />
             <Button
                 android:id="@+id/cosine_button"
                 style="@style/operation_button"

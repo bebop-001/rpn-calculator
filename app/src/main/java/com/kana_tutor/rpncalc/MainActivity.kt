@@ -3,8 +3,10 @@
 package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Typeface
+import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
 import android.view.ContextMenu
@@ -62,6 +64,9 @@ class MainActivity : AppCompatActivity() {
         panelTextView = findViewById(R.id.panelTextView)
 
         shift_key.setOnLongClickListener {
+            val am = (getSystemService(Context.AUDIO_SERVICE)
+                    as AudioManager)
+            am.playSoundEffect(AudioManager.FX_KEY_CLICK)
             Toast.makeText(this, "Long click detected",
                     Toast.LENGTH_SHORT).show()
             shiftLock = !shiftLock
@@ -105,38 +110,43 @@ class MainActivity : AppCompatActivity() {
         openContextMenu(view)
         returnResult = toReturn // to return the result of the operation.
     }
-    private fun calculate(toCalculate: Stack<RpnToken>, text : String = "") : Stack<RpnToken> {
-        val newTokens = "$accumulator\n$text"
+    private fun calculate(text : String = "") {
+        rpnStack.addAll("$accumulator\n$text"
                 .split("\n")
                 .filter{!"^\\s*#".toRegex().matches(it)}
                 .joinToString("\n")
                 .split("\\s+".toRegex())
                 .filter{it.isNotEmpty()}
-                .map{RpnToken(it)}
-
+                .map{RpnToken(it)})
 
         accumulator = ""
-        toCalculate.addAll(newTokens)
-        val newStack =  RpnParser.rpnCalculate(toCalculate)
-        panelTextView.text = newStack.joinToString("\n") { it.token } + "\n"
+        rpnStack =  RpnParser.rpnCalculate(rpnStack)
+        panelTextView.text = rpnStack.joinToString("\n") { it.token } + "\n"
         panel_scroll.post{ // scroll to the bottom of the screen.
             panel_scroll.fullScroll(ScrollView.FOCUS_DOWN) }
-        return newStack
     }
     private val shiftedButtonIds = arrayOf(R.id.sine_button,
             R.id.cosine_button, R.id.tangent_button)
     private fun setShiftKey(isUp: Boolean) {
+        data class ButtonInfo(val id:Int, val button_up_txt:String, val button_down_txt:String)
+        val buttonInfo = arrayOf(
+                ButtonInfo(R.id.sine_button, "SIN", "ASIN"),
+                ButtonInfo(R.id.cosine_button, "COS", "ACOS"),
+                ButtonInfo(R.id.tangent_button, "TAN", "ATAN"),
+                ButtonInfo(R.id.shift_key, "⇳SHFT", "⇳SHFT"),
+                ButtonInfo(R.id.sto_rcl_button, "STO", "RCL")
+        )
+        val textColor = ContextCompat.getColor(
+                this,
+                if (isUp) android.R.color.white
+                else R.color.shift_down_text
+        )
         fun Button.setButton(textIn: String, textColor: Int, tag: String = "") {
             text = textIn
             setTextColor(textColor)
             if (tag.isNotEmpty())
                 this.tag = tag
         }
-        val textColor = ContextCompat.getColor(
-                this,
-                if (isUp) android.R.color.white
-                else R.color.shift_down_text
-        )
         shift_key.setBackgroundColor(
                 ContextCompat.getColor(
                         this,
@@ -144,20 +154,13 @@ class MainActivity : AppCompatActivity() {
                         else R.color.shift_down_bg
                 )
         )
-        tangent_button.setTextColor(textColor)
-        sine_button.setTextColor(textColor)
-        cosine_button.setTextColor(textColor)
-        shift_key.setTextColor(textColor)
-
-        if (isUp) {
-            tangent_button.text = "TAN"
-            sine_button.text = "SIN"
-            cosine_button.text = "COS"
-        }
-        else {
-            tangent_button.setButton("ATAN", textColor)
-            sine_button.setButton("ASIN", textColor)
-            cosine_button.setButton("ACOS", textColor)
+        for (b in buttonInfo) {
+            // use the resource id to find the button then
+            // apply the appropriate text and color.
+            val buttonTxt =
+                if (isUp) b.button_up_txt
+                else b.button_down_txt
+            findViewById<Button>(b.id)!!.setButton(buttonTxt, textColor)
         }
     }
     @SuppressLint("SetTextI18n")
@@ -213,18 +216,11 @@ class MainActivity : AppCompatActivity() {
                     rpnStack.push(RpnToken(buttonText))
                     panelTextAppend(buttonText)
                 }
-                "CLR", "SWAP", "DROP", "DUP" -> {
-                    rpnStack = calculate(rpnStack, buttonText)
-                }
-                "ENTR" -> {
-                    rpnStack = calculate(rpnStack, buttonText)
-                }
                 "STK" -> {
                     getStackOperation(v){result ->
-                        rpnStack = calculate(rpnStack, result)
+                        calculate(result)
                     }
                 }
-
                 "DEL" -> {
                     if (accumulator.isNotEmpty()) {
                         accumulator = accumulator.dropLast(1)
@@ -234,22 +230,24 @@ class MainActivity : AppCompatActivity() {
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
                     if (buttonText == "E") {
-                        if (accumulator.contains("E"))
+                        // unless the accumulator contans 1 or more digits
+                        // and doesn't already contain an "E", ignore it.
+                        if (!accumulator.contains("\\d+".toRegex())
+                                || accumulator.contains("E"))
                             buttonText = ""
                     }
                     panelTextAppend(buttonText)
                     accumulator += buttonText
                 }
                 // change sign
-                "CHS" -> {
-                    rpnStack = calculate(rpnStack, buttonText)
-                }
-                "+", "-", "×", "÷", "^" -> {
-                    rpnStack = calculate(rpnStack,buttonText)
+                "CHS", "+", "-", "×", "÷", "^",
+                "CLR", "SWAP", "DROP", "DUP",
+                "ENTR", "STO", "RCL"-> {
+                    calculate(buttonText)
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                     val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
-                    rpnStack = calculate(rpnStack, "$angleUnits\n$buttonText")
+                    calculate("$angleUnits\n$buttonText")
                 }
                 else -> Log.d("btnOnClick", "$buttonText ignored")
             }
