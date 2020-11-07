@@ -176,7 +176,8 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
             ButtonInfo(R.id.cosine_button, "COS", "ACOS"),
             ButtonInfo(R.id.tangent_button, "TAN", "ATAN"),
             ButtonInfo(R.id.shift_button, "⇳SHFT", "⇳SHFT"),
-            ButtonInfo(R.id.sto_rcl_button, "STO", "RCL")
+            ButtonInfo(R.id.sto_rcl_button, "STO", "RCL"),
+            ButtonInfo(R.id.del_clr_button, "DEL", "CLR")
     )
 
     private fun setShiftKey(isUp: Boolean) {
@@ -291,7 +292,21 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 "CHS", "+", "-", "×", "÷", "^",
                 "CLR", "SWAP", "DROP", "DUP",
                 "ENTR", "STO", "RCL", "REG" -> {
-                    calculate(buttonText)
+                    if (v.id == R.id.del_clr_button) {
+                        if (accumulator.isEmpty() && rpnStack.isNotEmpty()) {
+                            calculate("DROP")
+                        }
+                        else if (panelTextView.text.toString().isNotEmpty()) {
+                            accumulator = ""
+                            var t =  panelTextView.text.toString()
+                            while(!t.endsWith("\n") && t.isNotEmpty())
+                                t = t.dropLast(1)
+                            panelTextView.text = t
+                        }
+                    }
+                    else {
+                        calculate(buttonText)
+                    }
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                     val angleUnits = if (angleIsDegrees) "DEG" else "RAD"

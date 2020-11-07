@@ -13,6 +13,7 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
+                android:id="@+id/del_clr_button"
                 style="@style/operation_button"
                 android:text="DEL" />
             <Button
