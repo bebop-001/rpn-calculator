@@ -33,8 +33,11 @@ class RpnParser private constructor() {
     companion object {
         private val registers = mutableMapOf<Int, Double>()
         // return the registers as an array to protect from user.
-        fun getStored ()  = registers.map{it}.toTypedArray()
+        fun getRigisters ()  = registers.map{it}.toTypedArray()
         var storedChanged : (() -> Unit)? = null
+        fun clearRegisters () {
+            registers.clear()
+        }
         private var digitsFormatIsEnabled = true
         var digitsAfterDecimal = 3
             private set
@@ -52,6 +55,14 @@ class RpnParser private constructor() {
                 digitsFormat += if (digits > 0) "." + "0".repeat(digits) else ""
             }
         }
+        fun Double.toFormattedString(): String {
+            return if (digitsFormatIsEnabled) {
+                DecimalFormat(digitsFormat)
+                        .format(this)
+                        .toString()
+            }
+            else this.toString()
+        }
 
         // from https://rosettacode.org/wiki/Parsing/RPN_calculator_algorithm
         fun rpnCalculate(inStack : Stack<RpnToken>): Stack<RpnToken> {
@@ -61,15 +72,6 @@ class RpnParser private constructor() {
                 if (token == "π" || token == "PI")
                     value = Math.PI
                 return value
-            }
-
-            fun Double.toFormattedString(): String {
-                return if (digitsFormatIsEnabled) {
-                    DecimalFormat(digitsFormat)
-                            .format(this)
-                            .toString()
-                }
-                else this.toString()
             }
             fun fromFormattedString(str:String) : Double =
                 str.split(",").joinToString().toDouble()
@@ -158,15 +160,21 @@ class RpnParser private constructor() {
                         registers[idx] = newRegValue
                     }
                     "RCL" -> {
-                        val stoExceptionString =
-                                "Please select a register between 1 and 100.\nbad index:%s"
-                        try {
-                            val idx = outStack.pop().original.toInt()
-                            outStack.pushD(registers[idx]!!)
+                        val idxToken = outStack.pop() ?:
+                            throw RpnParserException("${next.token} index not found.")
+                        val idx : Int = try {idxToken.original.toInt()}
+                        catch (e:Exception) {
+                            throw RpnParserException("${next.token}: "
+                                    + "${idxToken.original}: not an integer.")
                         }
-                        catch (e:java.lang.Exception) {
-                            RpnParserException("RCL FAILED:$e")
+                        if (idx !in  1..100) {
+                            throw RpnParserException("${next.token}: "
+                                    + "index not between 1 and 100:$idx")
                         }
+                        val  d : Double = registers[idx] ?:
+                            throw (RpnParserException("${next.token}: "
+                                    + "Register $idx is empty."))
+                        outStack.pushD(registers[idx]!!)
                     }
                     "RAD"                             -> {
                         angleIsDegrees = false

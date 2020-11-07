@@ -4,11 +4,10 @@ package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
-import android.content.res.Resources
+import android.graphics.Typeface
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
-import android.util.TypedValue
 import android.view.ContextMenu
 import android.view.ContextMenu.ContextMenuInfo
 import android.view.Menu
@@ -19,6 +18,7 @@ import android.widget.ScrollView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.kana_tutor.rpncalc.RpnParser.Companion.toFormattedString
 import com.kana_tutor.rpncalc.RpnParser.RpnToken
 import com.kana_tutor.rpncalc.kanautils.buildInfoDialog
 import com.kana_tutor.rpncalc.kanautils.displayReleaseInfo
@@ -45,30 +45,29 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     private var menuNumberFormatString = R.string.number_formatting_enabled
 
     fun displayStoredValues() {
+        val sortedRegisters = RpnParser.getRigisters()
+                .toList()
+                .sortedBy { it.key }
+
         val mess =
-                (0..50).map{"% 2d) %3.2f".format(it, it * 100 / 3.0)}
-                        .joinToString("\n")
-
+                if (sortedRegisters.isEmpty()) "Empty"
+                else sortedRegisters
+                    .map { "%2d) %s".format(it.key, it.value.toFormattedString()) }
+                    .joinToString("\n")
         val dialog = AlertDialog.Builder(this)
-            .setTitle("title")
+            .setTitle(R.string.register_contents)
+            .setNegativeButton(R.string.done, { d, i ->
+                d.cancel()
+            })
+            .setPositiveButton(R.string.clear_registers, { d, i ->
+                RpnParser.clearRegisters()
+                d.cancel()
+            })
             .setMessage(mess)
-            .setPositiveButton(android.R.string.yes) {
-                dialog, which -> dialog.dismiss()
-            }
-            .setIcon(android.R.drawable.ic_dialog_info)
             .show()
-
-        // val scroller = Scroller(dialog.context)
-        val textView : TextView =
-                dialog.findViewById<TextView>(android.R.id.message)!!
-        // textView.setScroller(scroller)
-        // textView.setSingleLine(false)
-        // textView.maxLines = 10
-        // textView.isVerticalScrollBarEnabled = true
-        textView.text = mess
+        var tv  = dialog.findViewById<TextView>(android.R.id.message)!!
+        tv.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
     }
-
-
     override fun onLongClick(v: View): Boolean {
         Toast.makeText(this, "Long click detected",
                 Toast.LENGTH_SHORT).show()

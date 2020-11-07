@@ -8,7 +8,6 @@
     <string name="number_formatting_disabled">Number Formatting: Disabled</string>
     <!-- number format dialog -->
     <string name="set_number_format">Set number format</string>
-    <string name="done">Done</string>
     <string name="enable_comma">Enable comma formatting</string>
     <string name="digits_after_decimal">Digits after decimal: %d</string>
 
@@ -17,4 +16,9 @@
     <string name="swap">Swap X⇆Y</string>
     <string name="Drop">⇩ Drop bottom item</string>
     <string name="Duplicate">⇉ Duplicate bottom item</string>
+
+    <!-- show registers -->
+    <string name="clear_registers">Clear all registers</string>
+    <string name="done">Done</string>
+    <string name="register_contents">Current Register Contents</string>
 </resources>
