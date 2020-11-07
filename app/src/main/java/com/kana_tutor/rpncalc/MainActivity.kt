@@ -4,8 +4,11 @@ package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
+import android.content.res.Resources
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
+import android.util.TypedValue
 import android.view.ContextMenu
 import android.view.ContextMenu.ContextMenuInfo
 import android.view.Menu
@@ -16,7 +19,6 @@ import android.widget.ScrollView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.kana_tutor.rpncalc.RpnParser.Companion.clearRegisters
 import com.kana_tutor.rpncalc.RpnParser.RpnToken
 import com.kana_tutor.rpncalc.kanautils.buildInfoDialog
 import com.kana_tutor.rpncalc.kanautils.displayReleaseInfo
@@ -26,11 +28,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.keyboard_layout.*
 import kotlinx.android.synthetic.main.number_format.view.*
 import java.util.*
-
-import com.kana_tutor.rpncalc.RpnParser.Companion.toFormattedString
-import kotlinx.android.synthetic.main.register_contents.*
-import kotlinx.android.synthetic.main.register_contents.view.*
-import kotlin.time.seconds
 
 
 class MainActivity : AppCompatActivity() , View.OnLongClickListener {
@@ -46,29 +43,31 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     private var angleIsDegrees = true
     private var numberFormattingEnabled = true
     private var menuNumberFormatString = R.string.number_formatting_enabled
-    fun displayStoredValues() {
-        val registers = RpnParser.getRigisters()
-        val registersList = registers.mapIndexed { i, entry ->
-            Pair(i, registers[i].key)
-        }.sortedBy { it.second }
-                .joinToString("\n")
-        val v = layoutInflater.inflate(R.layout.register_contents, null)
-        val tv = v.findViewById<TextView>(R.id.register_contents)
-        val testString = (1..20).map{ "%2d) %3.5f".format(it, it * 100 / 3.0)}.joinToString("\n")
 
-        val ad = AlertDialog.Builder(this)
-                .setTitle("Register contents")
-                .setView(v)
-                .setNegativeButton(R.string.done, { d, i ->
-                    d.cancel()
-                })
-                .setPositiveButton(R.string.clear_registers, { d, i ->
-                    RpnParser.clearRegisters()
-                    d.cancel()
-                })
-        ad.show()
-        tv.text = testString
+    fun displayStoredValues() {
+        val mess =
+                (0..50).map{"% 2d) %3.2f".format(it, it * 100 / 3.0)}
+                        .joinToString("\n")
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("title")
+            .setMessage(mess)
+            .setPositiveButton(android.R.string.yes) {
+                dialog, which -> dialog.dismiss()
+            }
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .show()
+
+        // val scroller = Scroller(dialog.context)
+        val textView : TextView =
+                dialog.findViewById<TextView>(android.R.id.message)!!
+        // textView.setScroller(scroller)
+        // textView.setSingleLine(false)
+        // textView.maxLines = 10
+        // textView.isVerticalScrollBarEnabled = true
+        textView.text = mess
     }
+
 
     override fun onLongClick(v: View): Boolean {
         Toast.makeText(this, "Long click detected",
@@ -117,9 +116,9 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     var returnResult: ((String) -> Unit)? = null
     override fun onContextItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.clear_item     -> returnResult?.invoke("CLR\n")
-            R.id.swap_item      -> returnResult?.invoke("SWAP\n")
-            R.id.drop_item      -> returnResult?.invoke("DROP")
+            R.id.clear_item -> returnResult?.invoke("CLR\n")
+            R.id.swap_item -> returnResult?.invoke("SWAP\n")
+            R.id.drop_item -> returnResult?.invoke("DROP")
             R.id.duplicate_item -> returnResult?.invoke("DUP")
             else                -> return super.onContextItemSelected(item)
         }
@@ -228,7 +227,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
 
         try {
             when (buttonText) {
-                "DEG"                                                      -> {
+                "DEG" -> {
                     angleIsDegrees = false
                     (v as Button).setTextColor(ContextCompat.getColor(
                             this, R.color.shift_down_text))
@@ -240,7 +239,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                             .putBoolean("angleIsDegrees", angleIsDegrees)
                             .apply()
                 }
-                "RAD"                                                      -> {
+                "RAD" -> {
                     angleIsDegrees = true
                     (v as Button).setTextColor(ContextCompat.getColor(
                             this, android.R.color.white))
@@ -252,13 +251,13 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                             .putBoolean("angleIsDegrees", angleIsDegrees)
                             .apply()
                 }
-                "⇳SHFT"                                                    -> {
+                "⇳SHFT" -> {
                     if (!shiftLock) {
                         shiftIsUp = !shiftIsUp
                         setShiftKey(shiftIsUp)
                     }
                 }
-                "PI", "π"                                                  -> {
+                "PI", "π" -> {
                     if (accumulator.isNotEmpty()) {
                         rpnStack.push(RpnToken(accumulator))
                         accumulator = ""
@@ -266,12 +265,12 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                     rpnStack.push(RpnToken(buttonText))
                     panelTextAppend(buttonText)
                 }
-                "STK"                                                      -> {
+                "STK" -> {
                     getStackOperation(v) { result ->
                         calculate(result)
                     }
                 }
-                "DEL"                                                      -> {
+                "DEL" -> {
                     if (accumulator.isNotEmpty()) {
                         accumulator = accumulator.dropLast(1)
                         panelTextView.text =
@@ -292,10 +291,10 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 // change sign
                 "CHS", "+", "-", "×", "÷", "^",
                 "CLR", "SWAP", "DROP", "DUP",
-                "ENTR", "STO", "RCL", "REG"                                -> {
+                "ENTR", "STO", "RCL", "REG" -> {
                     calculate(buttonText)
                 }
-                "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN"                -> {
+                "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                     val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
                     calculate("$angleUnits\n$buttonText")
                 }
@@ -389,9 +388,9 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.number_formatting -> return numberFormatControl(item)
-            R.id.build_info        -> return buildInfoDialog()
+            R.id.build_info -> return buildInfoDialog()
             R.id.release_info_item -> return displayReleaseInfo(false)
-            R.id.menu_about        -> return showAboutDialog()
+            R.id.menu_about -> return showAboutDialog()
             else                   -> {             // Currently nested menu items aren't caught in switch above
                 // and show up here.
                 Log.i("MainActivity", String.format(
