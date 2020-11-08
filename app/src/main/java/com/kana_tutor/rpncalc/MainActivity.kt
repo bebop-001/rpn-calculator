@@ -3,9 +3,11 @@
 package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.graphics.Typeface
+import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -25,6 +27,7 @@ import com.kana_tutor.rpncalc.kanautils.showAboutDialog
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.keyboard_layout.*
 import kotlinx.android.synthetic.main.number_format.view.*
+import java.lang.RuntimeException
 import java.util.*
 
 
@@ -67,16 +70,21 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     }
     private var shiftLock = false
     override fun onLongClick(v: View): Boolean {
-        Toast.makeText(this, "Long click detected",
-                Toast.LENGTH_SHORT).show()
+        fun click() = (getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+                .playSoundEffect(AudioManager.FX_KEY_CLICK)
         when (v.id) {
             R.id.shift_button -> {
+                click()
                 shiftLock = !shiftLock
                 shiftIsUp = !shiftLock
-                setShiftKey(shiftIsUp)
+                setShiftedButtons(shiftIsUp)
                 return true
             }
-            R.id.registers_button -> displayStoredValues()
+            R.id.registers_button -> {
+                click()
+                displayStoredValues()
+                return true
+            }
         }
         return false
     }
@@ -167,49 +175,37 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         }
     }
 
-    data class ButtonInfo(val id: Int, val button_up_txt: String, val button_down_txt: String)
-
-    val buttonInfo = arrayOf(
-            ButtonInfo(R.id.sine_button, "SIN", "ASIN"),
-            ButtonInfo(R.id.cosine_button, "COS", "ACOS"),
-            ButtonInfo(R.id.tangent_button, "TAN", "ATAN"),
-            ButtonInfo(R.id.shift_button, "⇳SHFT", "⇳SHFT"),
-            ButtonInfo(R.id.sto_rcl_button, "STO", "RCL"),
-            ButtonInfo(R.id.del_clr_button, "DEL", "CLR")
+    val buttonInfo = hashMapOf<Int,Pair<String,String>>(
+            R.id.sine_button    to Pair("SIN", "ASIN"),
+            R.id.cosine_button  to Pair("COS", "ACOS"),
+            R.id.tangent_button to Pair("TAN", "ATAN"),
+            R.id.shift_button   to Pair("⇳SHFT", "⇳SHFT"),
+            R.id.sto_rcl_button to Pair("STO", "RCL"),
+            R.id.del_clr_button to Pair("DEL", "CLR")
     )
 
-    private fun setShiftKey(isUp: Boolean) {
+    private fun setShiftedButton(isUp:Boolean, resId:Int) {
+        val button = findViewById<Button>(resId)!!
         val textColor = ContextCompat.getColorStateList(
                 this,
                 if (isUp) R.color.white_text_color
                 else R.color.red_text_color
         )!!
-
-        fun Button.setButton(textIn: String, textColor: ColorStateList, tag: String = "") {
-            text = textIn
-            setTextColor(textColor)
-            if (tag.isNotEmpty())
-                this.tag = tag
-        }
-        shift_button.setBackgroundColor(
-                ContextCompat.getColor(
-                        this,
-                        if (isUp) R.color.operation_button
-                        else R.color.shift_down_bg
-                )
-        )
-        for (b in buttonInfo) {
-            // use the resource id to find the button then
-            // apply the appropriate text and color.
-            val buttonTxt =
-                    if (isUp) b.button_up_txt
-                    else b.button_down_txt
-            findViewById<Button>(b.id)!!.setButton(buttonTxt, textColor)
-        }
+        val p = buttonInfo[resId]
+        if (p == null)
+            throw RuntimeException(
+                "setShiftedButton: unrecognized resource id:${"0x%08x".format(resId)}"
+            )
+        val (buttonUp, buttonDown) = buttonInfo[resId]!!
+        button.text = if(isUp) buttonUp else buttonDown
+        button.setTextColor(textColor)
+    }
+    private fun setShiftedButtons(isUp: Boolean) {
+        buttonInfo.map{setShiftedButton(isUp, it.key)}
     }
     val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
             R.id.mult_button, R.id.plus_button, R.id.minus_button,
-            R.id.registers_button)
+            R.id.registers_button, R.id.del_clr_button)
     private var useRegisterLock = false
     private fun useRegisterButton() {
         fun getAllChildren(v: View): ArrayList<View>? {
@@ -242,9 +238,11 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 b.isEnabled = !useRegisterLock
             }
         }
+        // clear register in register mode.  clear/delete otherwise.
         if (useRegisterLock) {
-
+            this.findViewById<Button>(R.id.del_clr_button).text = "CLR"
         }
+        else setShiftedButton(shiftIsUp, R.id.del_clr_button)
 
         val buttonColor =
             if (useRegisterLock) R.color.green_text_color
@@ -301,7 +299,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 "⇳SHFT" -> {
                     if (!shiftLock) {
                         shiftIsUp = !shiftIsUp
-                        setShiftKey(shiftIsUp)
+                        setShiftedButtons(shiftIsUp)
                     }
                 }
                 "PI", "π" -> {
@@ -370,10 +368,9 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
             }
             // if this a shifted key and shift is down and shift lock is off,
             // turn shift off.
-            if (!shiftLock && !shiftIsUp && R.id.shift_button != v.id &&
-                    buttonInfo.map { it.id }.contains(v.id)) {
+            if (buttonInfo.containsKey(v.id) && !shiftIsUp && v.id != R.id.shift_button) {
                 shiftIsUp = true
-                setShiftKey(shiftIsUp)
+                setShiftedButtons(shiftIsUp)
             }
         }
         catch (e: Exception) {
