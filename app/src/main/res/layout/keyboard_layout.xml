@@ -3,6 +3,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/keyboard_root"
     android:layout_width="0dp"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -45,7 +46,7 @@
             <Button
                 style="@style/operation_button"
                 android:text="E"
-                android:textColor="@android:color/holo_orange_light" />
+                android:textColor="@color/orange_text_color" />
             <Button
                 android:id="@+id/sine_button"
                 style="@style/operation_button"
@@ -71,7 +72,7 @@
             <Button
                 style="@style/operation_button"
                 android:text="π"
-                android:textColor="@android:color/holo_orange_light" />
+                android:textColor="@color/orange_text_color" />
             <Button
                 android:id="@+id/cosine_button"
                 style="@style/operation_button"
@@ -120,18 +121,23 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
+                android:id="@+id/pow_button"
                 style="@style/math_op_button"
                 android:text="^" />
             <Button
+                android:id="@+id/div_button"
                 style="@style/math_op_button"
                 android:text="÷" />
             <Button
+                android:id="@+id/mult_button"
                 style="@style/math_op_button"
                 android:text="×" />
             <Button
+                android:id="@+id/minus_button"
                 style="@style/math_op_button"
                 android:text="-" />
             <Button
+                android:id="@+id/plus_button"
                 style="@style/math_op_button"
                 android:text="+" />
             <Button

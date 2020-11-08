@@ -4,19 +4,17 @@ package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
+import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.method.ScrollingMovementMethod
 import android.util.Log
-import android.view.ContextMenu
+import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
 import android.widget.*
 import android.widget.ScrollView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import com.kana_tutor.rpncalc.RpnParser.Companion.toFormattedString
 import com.kana_tutor.rpncalc.RpnParser.RpnToken
@@ -39,7 +37,6 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
 
     private lateinit var panelTextView: TextView
     private var shiftIsUp = true
-    private var shiftLock = false
     private var angleIsDegrees = true
     private var numberFormattingEnabled = true
     private var menuNumberFormatString = R.string.number_formatting_enabled
@@ -68,6 +65,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         var tv  = dialog.findViewById<TextView>(android.R.id.message)!!
         tv.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
     }
+    private var shiftLock = false
     override fun onLongClick(v: View): Boolean {
         Toast.makeText(this, "Long click detected",
                 Toast.LENGTH_SHORT).show()
@@ -181,13 +179,13 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     )
 
     private fun setShiftKey(isUp: Boolean) {
-        val textColor = ContextCompat.getColor(
+        val textColor = ContextCompat.getColorStateList(
                 this,
-                if (isUp) android.R.color.white
-                else R.color.shift_down_text
-        )
+                if (isUp) R.color.white_text_color
+                else R.color.red_text_color
+        )!!
 
-        fun Button.setButton(textIn: String, textColor: Int, tag: String = "") {
+        fun Button.setButton(textIn: String, textColor: ColorStateList, tag: String = "") {
             text = textIn
             setTextColor(textColor)
             if (tag.isNotEmpty())
@@ -209,7 +207,53 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
             findViewById<Button>(b.id)!!.setButton(buttonTxt, textColor)
         }
     }
+    val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
+            R.id.mult_button, R.id.plus_button, R.id.minus_button,
+            R.id.registers_button)
+    private var useRegisterLock = false
+    private fun useRegisterButton() {
+        fun getAllChildren(v: View): ArrayList<View>? {
+            if (v !is ViewGroup) {
+                val viewArrayList = ArrayList<View>()
+                viewArrayList.add(v)
+                return viewArrayList
+            }
+            val result = ArrayList<View>()
+            val vg = v
+            for (i in 0 until vg.childCount) {
+                val child = vg.getChildAt(i)
+                val viewArrayList = ArrayList<View>()
+                viewArrayList.add(v)
+                viewArrayList.addAll(getAllChildren(child)!!)
+                result.addAll(viewArrayList)
+            }
+            return result
+        }
+        // find all the buttons under our keyboard root.
+        val keyboardRoot =
+                this.findViewById<LinearLayout>(R.id.keyboard_root)
+        val buttons  =
+            getAllChildren(keyboardRoot)?.filter{it is Button} as List<Button>
+        useRegisterLock = !useRegisterLock
+        // enable/disable keys not used for the REG operator.
+        for (b in buttons) {
+            if (!useRegisterKeys.contains(b.id)) {
+                val color = b.textColors
+                b.isEnabled = !useRegisterLock
+            }
+        }
+        if (useRegisterLock) {
 
+        }
+
+        val buttonColor =
+            if (useRegisterLock) R.color.green_text_color
+            else R.color.white_text_color
+        for (button in useRegisterKeys)
+            findViewById<Button>(button)
+                .setTextColor(
+                        ContextCompat.getColorStateList(this, buttonColor))
+    }
     @SuppressLint("SetTextI18n")
     fun btnOnClick(v: View) {
         @SuppressLint("SetTextI18n")
@@ -224,13 +268,16 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
 
         var buttonText = if (v.tag != null) v.tag.toString()
         else (v as Button).text.toString()
-
+        // If useRegisterLock is set and this isn't a math operation
+        // key (eg:+-^...) ignore it.
+        if (useRegisterLock && !useRegisterKeys.contains(v.id))
+            return
         try {
             when (buttonText) {
                 "DEG" -> {
                     angleIsDegrees = false
-                    (v as Button).setTextColor(ContextCompat.getColor(
-                            this, R.color.shift_down_text))
+                    (v as Button).setTextColor(AppCompatResources
+                            .getColorStateList(this, R.color.red_text_color))
                     v.setBackgroundColor(
                             ContextCompat.getColor(
                                     this, R.color.shift_down_bg))
@@ -288,18 +335,25 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                     panelTextAppend(buttonText)
                     accumulator += buttonText
                 }
+                // retisters
+                "REG" -> {
+                    if (!useRegisterLock) {
+                        calculate(buttonText)
+                    }
+                    useRegisterButton()
+                }
                 // change sign
                 "CHS", "+", "-", "×", "÷", "^",
                 "CLR", "SWAP", "DROP", "DUP",
-                "ENTR", "STO", "RCL", "REG" -> {
+                "ENTR", "STO", "RCL" -> {
                     if (v.id == R.id.del_clr_button) {
                         if (accumulator.isEmpty() && rpnStack.isNotEmpty()) {
                             calculate("DROP")
                         }
                         else if (panelTextView.text.toString().isNotEmpty()) {
                             accumulator = ""
-                            var t =  panelTextView.text.toString()
-                            while(!t.endsWith("\n") && t.isNotEmpty())
+                            var t = panelTextView.text.toString()
+                            while (!t.endsWith("\n") && t.isNotEmpty())
                                 t = t.dropLast(1)
                             panelTextView.text = t
                         }
@@ -436,4 +490,22 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     override fun onBackPressed() {
         doubleClickToExit(this)
     }
+}
+
+private fun getAllChildren(v: View): ArrayList<View>? {
+    if (v !is ViewGroup) {
+        val viewArrayList = ArrayList<View>()
+        viewArrayList.add(v)
+        return viewArrayList
+    }
+    val result = ArrayList<View>()
+    val vg = v
+    for (i in 0 until vg.childCount) {
+        val child = vg.getChildAt(i)
+        val viewArrayList = ArrayList<View>()
+        viewArrayList.add(v)
+        viewArrayList.addAll(getAllChildren(child)!!)
+        result.addAll(viewArrayList)
+    }
+    return result
 }

@@ -16,7 +16,7 @@
         <item name="android:textSize">18sp</item>
         <item name="android:layout_margin">1dp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textColor">@color/white_text_color</item>
     </style>
     <style name="operation_button" parent="number_button">
         <item name="android:background">@color/operation_button</item>
