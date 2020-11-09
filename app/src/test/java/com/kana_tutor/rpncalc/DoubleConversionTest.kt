@@ -1,5 +1,24 @@
+import com.google.gson.Gson
 import com.kana_tutor.rpncalc.kanautils.longBitStringToDouble
 import com.kana_tutor.rpncalc.kanautils.toLongBitsString
+import kotlin.random.Random.Default.nextDouble
+
+fun Map<Int, Double>.toJsonString() : String{
+    val stringMap = mutableMapOf<String, String>()
+    this.forEach{
+            (i,d)->stringMap .put(i.toString(), d.toLongBitsString())
+    }
+    return Gson().toJson(stringMap)
+}
+fun String.fromJsonString() : Map<Int, Double> {
+    val rv = mutableMapOf<Int,String>()
+    val x = this.split(",")
+
+
+
+
+    return rv as Map<Int, Double>
+}
 
 fun main(args: Array<String>) {
     val double = 1.5
@@ -12,4 +31,8 @@ fun main(args: Array<String>) {
     println("$double2, $s1, ${s1.longBitStringToDouble() - double2}")
     println("Empty string:${"".longBitStringToDouble()}")
     println("Nan:${(1/0.0).toLongBitsString()}")
+
+    val hash = mutableMapOf<Int, Double>()
+    (1..20).forEach{it -> hash[it] = nextDouble()}
+    println(hash.toJsonString())
 }

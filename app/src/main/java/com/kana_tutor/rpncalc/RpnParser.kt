@@ -31,10 +31,7 @@ class RpnParser private constructor() {
         override fun toString(): String {return "$token:$value:$original"}
     }
     companion object {
-        private val registers = mutableMapOf<Int, Double>()
-        // return the registers as an array to protect from user.
-        fun getRigisters ()  = registers.map{it}.toTypedArray()
-        var storedChanged : (() -> Unit)? = null
+        var registers = mutableMapOf<Int, Double>()
         fun clearRegisters () {
             registers.clear()
         }

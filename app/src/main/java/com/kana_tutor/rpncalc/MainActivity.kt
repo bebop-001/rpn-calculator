@@ -9,6 +9,7 @@ import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.media.AudioManager
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
@@ -20,13 +21,11 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import com.kana_tutor.rpncalc.RpnParser.Companion.toFormattedString
 import com.kana_tutor.rpncalc.RpnParser.RpnToken
-import com.kana_tutor.rpncalc.kanautils.buildInfoDialog
-import com.kana_tutor.rpncalc.kanautils.displayReleaseInfo
-import com.kana_tutor.rpncalc.kanautils.doubleClickToExit
-import com.kana_tutor.rpncalc.kanautils.showAboutDialog
+import com.kana_tutor.rpncalc.kanautils.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.keyboard_layout.*
 import kotlinx.android.synthetic.main.number_format.view.*
+import java.io.File
 import java.lang.RuntimeException
 import java.util.*
 
@@ -45,14 +44,13 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     private var menuNumberFormatString = R.string.number_formatting_enabled
 
     fun displayStoredValues() {
-        val sortedRegisters = RpnParser.getRigisters()
-                .toList()
-                .sortedBy { it.key }
-
+        val sortedKeys = RpnParser.registers.keys.sorted()
         val mess =
-                if (sortedRegisters.isEmpty()) "Empty"
-                else sortedRegisters
-                    .map { "%2d) %s".format(it.key, it.value.toFormattedString()) }
+                if (sortedKeys.isEmpty()) "Empty"
+                else sortedKeys
+                    .map { "%2d) %s".format(
+                        it, RpnParser.registers[it]!!.toFormattedString()
+                    )}
                     .joinToString("\n")
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.register_contents)
@@ -67,6 +65,40 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
             .show()
         var tv  = dialog.findViewById<TextView>(android.R.id.message)!!
         tv.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+    }
+    fun saveRegisters() {
+        val asString = RpnParser.registers.map{ (key,value)->
+            "$key ${value.toLongBitsString()}"}
+                .joinToString("\n")
+        val registersDir = File("${getFilesDir()}/registers")
+        if (!registersDir.exists()) {
+            try {registersDir.mkdir()}
+            catch (e:Exception) {
+                throw RuntimeException("saveRegisters:mkdir $registersDir FAILED:$e")
+            }
+        }
+        val registersFile = File(registersDir, "registers.txt")
+        try { registersFile.writeText(asString) }
+        catch (e:java.lang.Exception) {
+            RuntimeException("saveRegisters write $registersFile FAILD")
+        }
+    }
+    fun restoreRegisters() {
+        val registers = mutableMapOf<Int, Double>()
+        val registersDir = File("${getFilesDir()}/registers")
+        val registersFile = File(registersDir, "registers.txt")
+        if (registersFile.exists()) {
+            val registerData = registersFile.readText()
+            registerData.split("\n").forEach{
+                val(idx, longBits) = it.split("\\s+".toRegex())
+                val value = longBits.longBitStringToDouble()
+                registers[idx.toInt()] = value
+            }
+        }
+        else {
+            Log.d("restoreRegisters", "$registersFile not found")
+        }
+        RpnParser.registers = registers
     }
     private var shiftLock = false
     override fun onLongClick(v: View): Boolean {
@@ -94,6 +126,13 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         setContentView(R.layout.activity_main)
         _sharedPreferences = getSharedPreferences(
                 "user_prefs.txt", MODE_PRIVATE)
+
+        shift_button.setOnLongClickListener(this)
+        registers_button.setOnLongClickListener(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
         angleIsDegrees = sharedPreferences.getBoolean("angleIsDegrees", true)
         numberFormattingEnabled =
                 sharedPreferences.getBoolean("numberFormattingEnabled", true)
@@ -108,9 +147,12 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 else
                     R.string.number_formatting_disabled
         panelTextView = findViewById(R.id.panelTextView)
+        restoreRegisters()
+    }
 
-        shift_button.setOnLongClickListener(this)
-        registers_button.setOnLongClickListener(this)
+    override fun onPause() {
+        super.onPause()
+        saveRegisters()
     }
 
     private var rpnStack = Stack<RpnToken>()

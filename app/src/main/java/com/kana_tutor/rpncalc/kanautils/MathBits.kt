@@ -1,6 +1,7 @@
 package com.kana_tutor.rpncalc.kanautils
 
 import java.lang.Exception
+import kotlin.random.Random.Default.nextDouble
 
 // for saving/restoring doubles using a long-bits string.
 val NAN_asString = java.lang.Double
@@ -24,5 +25,13 @@ fun String.longBitStringToDouble() : Double {
     catch (e: Exception) {
         println("longBitsToDouble \"$this\" FAILED:$e")
     }
+    return rv
+}
+
+fun HashMap<Int, Double>.toJson() : String{
+    val x = nextDouble()
+    val rv = "{" +
+    this.map{(key, value) -> "\"$key\" : \"${value.toLongBitsString()}\""}
+            .joinToString(",") + "}\n"
     return rv
 }
