@@ -112,6 +112,7 @@
                 style="@style/number_button"
                 android:text="3" />
             <Button
+                android:id="@+id/chs_button"
                 style="@style/number_button"
                 android:tag="CHS"
                 android:text="+/-" />

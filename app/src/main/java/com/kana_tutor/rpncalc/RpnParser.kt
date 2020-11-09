@@ -13,7 +13,7 @@ import kotlin.math.sin
 import kotlin.math.tan
 
 class RpnParserException (message:String) : Exception(message)
-
+const val RADIX = 36
 class RpnParser private constructor() {
     data class RpnToken(var token: String, var value : Double = NaN) {
         val original = token
@@ -70,6 +70,16 @@ class RpnParser private constructor() {
                     value = Math.PI
                 return value
             }
+            fun Stack<RpnToken>.peek(offset : Int = 0) :RpnToken? {
+                return (
+                        if ((this.lastIndex + offset) >= 0) this[this.lastIndex + offset]
+                        else null)
+            }
+            fun Stack<RpnToken>.pop(offset : Int = 0) :RpnToken? {
+                return (
+                        if ((this.lastIndex + offset) >= 0) this[this.lastIndex + offset]
+                        else null)
+            }
             fun fromFormattedString(str:String) : Double =
                 str.split(",").joinToString().toDouble()
             fun Stack<RpnToken>.pushD(d: Double) : RpnToken {
@@ -95,6 +105,15 @@ class RpnParser private constructor() {
             fun Stack<RpnToken>.unshift(tok :RpnToken)  = this.add(0, tok)
             fun Double.degreesToRadians(): Double = this * kotlin.math.PI / 180
             fun Double.radiansToDegrees(): Double  = this * 180 / kotlin.math.PI
+            fun String.isValidIndex(range: IntRange):Boolean{
+                var rv = false
+                try {
+                    val idx = this.toInt()
+                    rv = idx in range
+                }
+                catch (e:Exception) {/* ignore, using toInt to test for valid int. */}
+                return rv
+            }
             if (inStack.isEmpty()) return Stack<RpnToken>()
             println("Trace: For: ${inStack.map{"$it"}}")
             // format token for any token that has a value.
@@ -116,7 +135,12 @@ class RpnParser private constructor() {
                     inStack.pop()
                     inStack.pop()
                 }
-                inStack.lastEquals("CLR")  -> inStack.clear()
+                inStack.lastEquals("CLR")  -> {
+                    val previous = inStack.peek(-1)
+                    if (previous != null && previous.token == "STACK") {
+                        inStack.clear()
+                    }
+                }
             }
             println("Trace: after preprocess: ${inStack.map{"$it"}}")
             val outStack = Stack<RpnToken>()
@@ -137,6 +161,19 @@ class RpnParser private constructor() {
                             "÷", "/" -> outStack.pushD(d2 / d1)
                             "^"      -> outStack.pushD(d2.pow(d1))
                         }
+                    }
+                    "REG" -> {
+                        // if the previous value is a valid index into the registers
+                        // hash, set the next value on the out stack to the index.
+                        val previous = outStack.peek()
+                        if (previous == null)
+                            RpnParserException("RpnParser:REG:Stack is empth.")
+                        if (!previous.original.isValidIndex(1..100))
+                            throw RpnParserException("RpnParser:REG:${previous.original}:" +
+                                "Not a valid register index.")
+                        next.value = previous.value
+                        outStack.pop()
+                        outStack.push(next)
                     }
                     "STO" -> {
                         val stoExceptionString =
@@ -172,6 +209,19 @@ class RpnParser private constructor() {
                             throw (RpnParserException("${next.token}: "
                                     + "Register $idx is empty."))
                         outStack.pushD(registers[idx]!!)
+                    }
+                    "CLR" -> {
+                        val reg = outStack.peek()
+                        if (reg == null || reg.token != "REG") {
+                            throw RpnParserException("RpnParser: no register found.")
+                        }
+                        else {
+                            if (registers.containsKey(reg.value.toInt()))
+                                registers.remove(reg.value.toInt())
+                            else println("RpnParser.register.clear: " +
+                                    " Register ${reg.value.toInt()} not in use.")
+                            outStack.pop() // remove the index.
+                        }
                     }
                     "RAD"                             -> {
                         angleIsDegrees = false

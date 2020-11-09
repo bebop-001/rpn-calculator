@@ -163,7 +163,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     var returnResult: ((String) -> Unit)? = null
     override fun onContextItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.clear_item -> returnResult?.invoke("CLR\n")
+            R.id.clear_item -> returnResult?.invoke("STACK\nCLR\n")
             R.id.swap_item -> returnResult?.invoke("SWAP\n")
             R.id.drop_item -> returnResult?.invoke("DROP")
             R.id.duplicate_item -> returnResult?.invoke("DUP")
@@ -247,9 +247,9 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     }
     val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
             R.id.mult_button, R.id.plus_button, R.id.minus_button,
-            R.id.registers_button, R.id.del_clr_button)
+            R.id.registers_button, R.id.del_clr_button, R.id.chs_button)
     private var useRegisterLock = false
-    private fun useRegisterButton() {
+    private fun toggleRegisterLock() {
         fun getAllChildren(v: View): ArrayList<View>? {
             if (v !is ViewGroup) {
                 val viewArrayList = ArrayList<View>()
@@ -375,18 +375,21 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                     panelTextAppend(buttonText)
                     accumulator += buttonText
                 }
-                // retisters
+                // registers
                 "REG" -> {
-                    if (!useRegisterLock) {
-                        calculate(buttonText)
-                    }
-                    useRegisterButton()
+                    toggleRegisterLock()
                 }
                 // change sign
                 "CHS", "+", "-", "×", "÷", "^",
-                "CLR", "SWAP", "DROP", "DUP",
+                "SWAP", "DROP", "DUP",
                 "ENTR", "STO", "RCL" -> {
-                    if (v.id == R.id.del_clr_button) {
+                        calculate(buttonText)
+                }
+                "CLR", "DEL" -> {
+                    if (useRegisterLock) {
+                        calculate("\nREG\nCLR\n")
+                    }
+                    else if(!shiftIsUp) {
                         if (accumulator.isEmpty() && rpnStack.isNotEmpty()) {
                             calculate("DROP")
                         }
@@ -397,9 +400,6 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                                 t = t.dropLast(1)
                             panelTextView.text = t
                         }
-                    }
-                    else {
-                        calculate(buttonText)
                     }
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
@@ -414,6 +414,10 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 shiftIsUp = true
                 setShiftedButtons(shiftIsUp)
             }
+            if (useRegisterLock && useRegisterKeys.contains(v.id) && v.id != R.id.registers_button) {
+                toggleRegisterLock()
+            }
+
         }
         catch (e: Exception) {
             Toast.makeText(this, "Error: $e", Toast.LENGTH_LONG).show()
