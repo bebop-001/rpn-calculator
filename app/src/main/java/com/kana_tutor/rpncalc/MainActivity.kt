@@ -5,11 +5,9 @@ package com.kana_tutor.rpncalc
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
-import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.media.AudioManager
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
@@ -27,7 +25,6 @@ import kotlinx.android.synthetic.main.keyboard_layout.*
 import kotlinx.android.synthetic.main.number_format.view.*
 import java.io.File
 import java.lang.RuntimeException
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() , View.OnLongClickListener {
@@ -80,7 +77,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         val registersFile = File(registersDir, "registers.txt")
         try { registersFile.writeText(asString) }
         catch (e:java.lang.Exception) {
-            RuntimeException("saveRegisters write $registersFile FAILD")
+            throw RuntimeException("saveRegisters write $registersFile FAILD")
         }
     }
     fun restoreRegisters() {
@@ -155,7 +152,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         saveRegisters()
     }
 
-    private var rpnStack = Stack<RpnToken>()
+    private var rpnStack = RpnParser.RpnStack()
     private var accumulator = ""
 
     // used to return result of context menu operation
@@ -257,9 +254,8 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 return viewArrayList
             }
             val result = ArrayList<View>()
-            val vg = v
-            for (i in 0 until vg.childCount) {
-                val child = vg.getChildAt(i)
+            for (i in 0 until v.childCount) {
+                val child = v.getChildAt(i)
                 val viewArrayList = ArrayList<View>()
                 viewArrayList.add(v)
                 viewArrayList.addAll(getAllChildren(child)!!)
@@ -276,7 +272,6 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         // enable/disable keys not used for the REG operator.
         for (b in buttons) {
             if (!useRegisterKeys.contains(b.id)) {
-                val color = b.textColors
                 b.isEnabled = !useRegisterLock
             }
         }
@@ -533,22 +528,4 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     override fun onBackPressed() {
         doubleClickToExit(this)
     }
-}
-
-private fun getAllChildren(v: View): ArrayList<View>? {
-    if (v !is ViewGroup) {
-        val viewArrayList = ArrayList<View>()
-        viewArrayList.add(v)
-        return viewArrayList
-    }
-    val result = ArrayList<View>()
-    val vg = v
-    for (i in 0 until vg.childCount) {
-        val child = vg.getChildAt(i)
-        val viewArrayList = ArrayList<View>()
-        viewArrayList.add(v)
-        viewArrayList.addAll(getAllChildren(child)!!)
-        result.addAll(viewArrayList)
-    }
-    return result
 }

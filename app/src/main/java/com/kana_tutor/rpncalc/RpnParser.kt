@@ -2,11 +2,9 @@
 
 package com.kana_tutor.rpncalc
 
-import android.util.Log
 import java.lang.Double.NaN
 import java.lang.Double.isNaN
 import java.text.DecimalFormat
-import java.util.*
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
@@ -29,6 +27,36 @@ class RpnParser private constructor() {
             }
         }
         override fun toString(): String {return "$token:$value:$original"}
+    }
+    class RpnStack() : java.util.Stack<RpnToken>() {
+        enum class StkError (val errorType:String) {
+            empty("Stack is empty"),
+            conversion("Conversion error"),
+        }
+        fun peek(offset:Int = 0) : RpnToken? {
+            return (
+                if (this.lastIndex + offset >= 0)
+                    this[this.lastIndex + offset]
+                else
+                    null
+            )
+        }
+        fun shift()  = this.removeAt(0)
+        fun unshift(tok :RpnToken)  = this.add(0, tok)
+        fun popD(): Double {
+            var (token, value) = this.pop()
+            // filter out any commas in the string.
+            if (token == "π" || token == "PI")
+                value = Math.PI
+            return value
+        }
+        fun pop(offset : Int = 0) :RpnToken? {
+            return (
+                    if ((this.lastIndex + offset) >= 0) this[this.lastIndex + offset]
+                    else null)
+        }
+
+
     }
     companion object {
         var registers = mutableMapOf<Int, Double>()
@@ -62,27 +90,10 @@ class RpnParser private constructor() {
         }
 
         // from https://rosettacode.org/wiki/Parsing/RPN_calculator_algorithm
-        fun rpnCalculate(inStack : Stack<RpnToken>): Stack<RpnToken> {
-            fun Stack<RpnToken>.popD(): Double {
-                var (token, value) = this.pop()
-                // filter out any commas in the string.
-                if (token == "π" || token == "PI")
-                    value = Math.PI
-                return value
-            }
-            fun Stack<RpnToken>.peek(offset : Int = 0) :RpnToken? {
-                return (
-                        if ((this.lastIndex + offset) >= 0) this[this.lastIndex + offset]
-                        else null)
-            }
-            fun Stack<RpnToken>.pop(offset : Int = 0) :RpnToken? {
-                return (
-                        if ((this.lastIndex + offset) >= 0) this[this.lastIndex + offset]
-                        else null)
-            }
+        fun rpnCalculate(inStack : RpnStack): RpnStack {
             fun fromFormattedString(str:String) : Double =
                 str.split(",").joinToString().toDouble()
-            fun Stack<RpnToken>.pushD(d: Double) : RpnToken {
+            fun RpnStack.pushD(d: Double) : RpnToken {
                 val newToken =  if (digitsFormatIsEnabled)
                         RpnToken(d.toFormattedString(), d)
                     else
@@ -91,7 +102,7 @@ class RpnParser private constructor() {
                 return newToken
             }
 
-            fun Stack<RpnToken>.lastEquals(token: String): Boolean {
+            fun RpnStack.lastEquals(token: String): Boolean {
                 val lastIndex = this.lastIndex
                 return lastIndex >= 0 && this[lastIndex].token == token
             }
@@ -101,8 +112,6 @@ class RpnParser private constructor() {
                 value *= -1
                 return RpnToken(value.toFormattedString(), value)
             }
-            fun Stack<RpnToken>.shift() : RpnToken = this.removeAt(0)
-            fun Stack<RpnToken>.unshift(tok :RpnToken)  = this.add(0, tok)
             fun Double.degreesToRadians(): Double = this * kotlin.math.PI / 180
             fun Double.radiansToDegrees(): Double  = this * 180 / kotlin.math.PI
             fun String.isValidIndex(range: IntRange):Boolean{
@@ -114,7 +123,7 @@ class RpnParser private constructor() {
                 catch (e:Exception) {/* ignore, using toInt to test for valid int. */}
                 return rv
             }
-            if (inStack.isEmpty()) return Stack<RpnToken>()
+            if (inStack.isEmpty()) return RpnStack()
             println("Trace: For: ${inStack.map{"$it"}}")
             // format token for any token that has a value.
             inStack.filter{!isNaN(it.value)}
@@ -143,7 +152,7 @@ class RpnParser private constructor() {
                 }
             }
             println("Trace: after preprocess: ${inStack.map{"$it"}}")
-            val outStack = Stack<RpnToken>()
+            val outStack = RpnStack()
             var angleIsDegrees = false
             while (inStack.size > 0) {
                 val next = inStack.shift()
@@ -167,7 +176,7 @@ class RpnParser private constructor() {
                         // hash, set the next value on the out stack to the index.
                         val previous = outStack.peek()
                         if (previous == null)
-                            RpnParserException("RpnParser:REG:Stack is empth.")
+                            throw RpnParserException("RpnParser:REG:Stack is empth.")
                         if (!previous.original.isValidIndex(1..100))
                             throw RpnParserException("RpnParser:REG:${previous.original}:" +
                                 "Not a valid register index.")
@@ -205,9 +214,6 @@ class RpnParser private constructor() {
                             throw RpnParserException("${next.token}: "
                                     + "index not between 1 and 100:$idx")
                         }
-                        val  d : Double = registers[idx] ?:
-                            throw (RpnParserException("${next.token}: "
-                                    + "Register $idx is empty."))
                         outStack.pushD(registers[idx]!!)
                     }
                     "CLR" -> {
