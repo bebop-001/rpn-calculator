@@ -29,10 +29,23 @@ class RpnParser private constructor() {
         override fun toString(): String {return "$token:$value:$original"}
     }
     class RpnStack() : java.util.Stack<RpnToken>() {
+        companion object {
+            fun String.toRpnStack() : RpnStack {
+                val rpnStack = RpnStack()
+                val strTokens  = split("\n")
+                        .filter{"^\\s*#".toRegex().find(it) == null}
+                        .joinToString("\n")
+                        .split("\\s+".toRegex())
+                        .filter{it.isNotEmpty()}
+                strTokens.forEach{rpnStack.add(RpnToken(it))}
+                return rpnStack
+            }
+        }
         enum class StkError (val errorType:String) {
             empty("Stack is empty"),
             conversion("Conversion error"),
         }
+
         fun peek(offset:Int = 0) : RpnToken? {
             return (
                 if (this.lastIndex + offset >= 0)
@@ -60,6 +73,10 @@ class RpnParser private constructor() {
     }
     companion object {
         var registers = mutableMapOf<Int, Double>()
+        var printTrace = false
+        fun printTrace (trace : String) {
+            if(printTrace) println(trace)
+        }
         fun clearRegisters () {
             registers.clear()
         }
@@ -124,7 +141,7 @@ class RpnParser private constructor() {
                 return rv
             }
             if (inStack.isEmpty()) return RpnStack()
-            println("Trace: For: ${inStack.map{"$it"}}")
+            printTrace("Trace: For: ${inStack.map{"$it"}}")
             // format token for any token that has a value.
             inStack.filter{!isNaN(it.value)}
                     .map{it.token = it.value.toFormattedString()}
@@ -144,19 +161,13 @@ class RpnParser private constructor() {
                     inStack.pop()
                     inStack.pop()
                 }
-                inStack.lastEquals("CLR")  -> {
-                    val previous = inStack.peek(-1)
-                    if (previous != null && previous.token == "STACK") {
-                        inStack.clear()
-                    }
-                }
             }
-            println("Trace: after preprocess: ${inStack.map{"$it"}}")
+            printTrace("Trace: after preprocess: ${inStack.map{"$it"}}")
             val outStack = RpnStack()
             var angleIsDegrees = false
             while (inStack.size > 0) {
                 val next = inStack.shift()
-                println("Trace: next:$next inStack:${inStack.map{"$it"}} " +
+                printTrace("Trace: next:$next inStack:${inStack.map{"$it"}} " +
                         "outStack:${outStack.map{"$it"}}")
                 when (next.token) {
                     // op that expects two floats on stack.
@@ -218,15 +229,21 @@ class RpnParser private constructor() {
                     }
                     "CLR" -> {
                         val reg = outStack.peek()
-                        if (reg == null || reg.token != "REG") {
+                        if (reg == null) {
                             throw RpnParserException("RpnParser: no register found.")
                         }
-                        else {
+                        else if (reg.token == "REG") {
                             if (registers.containsKey(reg.value.toInt()))
                                 registers.remove(reg.value.toInt())
                             else println("RpnParser.register.clear: " +
                                     " Register ${reg.value.toInt()} not in use.")
                             outStack.pop() // remove the index.
+                        }
+                        else if (reg.token == "STACK") {
+                            outStack.clear()
+                        }
+                        else {
+                            throw RpnParserException("CLR: unexpected predicate:\"${reg.token}\"")
                         }
                     }
                     "RAD"                             -> {
@@ -281,7 +298,7 @@ class RpnParser private constructor() {
                     }
                 }
             }
-            println("Trace: return: ${outStack.map{it}}")
+            printTrace("Trace: return: ${outStack.map{it}}")
             return outStack
         }
     }
