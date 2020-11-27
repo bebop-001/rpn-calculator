@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity(){
             get() = _sharedPreferences
     }
 
-    private var shiftIsUp = true
     private var angleIsDegrees = true
     private var numberFormattingEnabled = true
     private var menuNumberFormatString = R.string.number_formatting_enabled
@@ -112,8 +111,8 @@ class MainActivity : AppCompatActivity(){
 
     private lateinit var allButtons : ArrayList<ArrayList<Button>>
 
-    private var shiftLock = false
-
+    private enum class KbdState {shiftUp, shiftDown, shiftLock, register, stack}
+    private var kbdState = KbdState.shiftUp
 
     // get a list of lists of all buttons under the keyboard by
     // row x column. 0,0 is top left, rr[lastIndex][lastIndex]
@@ -139,9 +138,9 @@ class MainActivity : AppCompatActivity(){
     lateinit var orange_text_color     : ColorStateList
     lateinit var green_text_color      : ColorStateList
 
-    var shift_down_bg                   = -1
-    var number_bg                    = -1
-    var operation_bg                = -1
+    var shift_down_bg   = -1
+    var number_bg       = -1
+    var operation_bg    = -1
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -291,17 +290,20 @@ class MainActivity : AppCompatActivity(){
             R.id.del_clr_button to Pair("DEL", "CLR")
     )
 
-    private fun setShiftedButton(isUp:Boolean, resId:Int) {
+    private fun setShiftedButton(state:KbdState, resId:Int) {
         val button = findViewById<Button>(resId)!!
-        val textColor =
-                if (isUp) white_text_color
-                else red_text_color
+        val textColor = when (state) {
+            KbdState.shiftUp -> white_text_color
+            KbdState.shiftDown -> red_text_color
+            KbdState.register -> green_text_color
+            else -> white_text_color
+        }
         val (buttonUp, buttonDown) = buttonInfo[resId]!!
-        button.text = if(isUp) buttonUp else buttonDown
+        button.text = if(state == KbdState.shiftUp) buttonUp else buttonDown
         button.setTextColor(textColor)
     }
-    private fun setShiftedButtons(isUp: Boolean) {
-        buttonInfo.map{setShiftedButton(isUp, it.key)}
+    private fun setShiftedButtons(state:KbdState) {
+        buttonInfo.map{setShiftedButton(state, it.key)}
     }
     private val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
             R.id.mult_button, R.id.plus_button, R.id.minus_button,
@@ -319,7 +321,7 @@ class MainActivity : AppCompatActivity(){
         if (useRegisterLock) {
             this.findViewById<Button>(R.id.del_clr_button).text = "CLR"
         }
-        else setShiftedButton(shiftIsUp, R.id.del_clr_button)
+        else setShiftedButton(kbdState, R.id.del_clr_button)
 
         val buttonColor =
             if (useRegisterLock) green_text_color
@@ -366,10 +368,9 @@ class MainActivity : AppCompatActivity(){
                             .apply()
                 }
                 "⇳SHFT" -> {
-                    if (!shiftLock) {
-                        shiftIsUp = !shiftIsUp
-                        setShiftedButtons(shiftIsUp)
-                    }
+                    kbdState =  if (kbdState == KbdState.shiftUp) KbdState.shiftDown
+                                else KbdState.shiftUp
+                    setShiftedButtons(kbdState)
                 }
                 "PI", "π" -> {
                     if (accumulator.isNotEmpty()) {
@@ -443,9 +444,11 @@ class MainActivity : AppCompatActivity(){
             }
             // if this a shifted key and shift is down and shift lock is off,
             // turn shift off.
-            if (buttonInfo.containsKey(button.id) && !shiftIsUp && button.id != R.id.shift_button) {
-                shiftIsUp = true
-                setShiftedButtons(shiftIsUp)
+            if (buttonInfo.containsKey(button.id)
+                    && kbdState == KbdState.shiftDown
+                    && button.id != R.id.shift_button) {
+                kbdState = KbdState.shiftUp
+                setShiftedButtons(kbdState)
             }
             if (useRegisterLock && useRegisterKeys.contains(button.id) && button.id != R.id.reg_stk_button) {
                 toggleRegisterLock()
