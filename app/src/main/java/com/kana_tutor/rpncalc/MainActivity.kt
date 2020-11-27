@@ -1,11 +1,10 @@
-@file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName")
+@file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName", "PrivatePropertyName")
 
 package com.kana_tutor.rpncalc
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.Typeface
 import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
@@ -18,8 +17,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import com.kana_tutor.rpncalc.kanautils.*
-import java.io.File
-import java.lang.RuntimeException
 
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
 
@@ -62,7 +59,7 @@ class MainActivity : AppCompatActivity(){
 
          */
     }
-    fun saveRegisters() {
+    private fun saveRegisters() {
         /*
         val asString = RpnParser.registers.map{ (key,value)->
             "$key ${value.toLongBitsString()}"}
@@ -77,12 +74,12 @@ class MainActivity : AppCompatActivity(){
         val registersFile = File(registersDir, "registers.txt")
         try { registersFile.writeText(asString) }
         catch (e:java.lang.Exception) {
-            throw RuntimeException("saveRegisters write $registersFile FAILD")
+            throw RuntimeException("saveRegisters write $registersFile FAILED")
         }
 
          */
     }
-    fun restoreRegisters() {
+    private fun restoreRegisters() {
         /*
         val registers = mutableMapOf<Int, Double>()
         val registersDir = File("${getFilesDir()}/registers")
@@ -102,17 +99,17 @@ class MainActivity : AppCompatActivity(){
 
          */
     }
-    lateinit var del_clr_button : Button
-    lateinit var exp_button     : Button
-    lateinit var pi_button      : Button
-    lateinit var reg_stk_button : Button
-    lateinit var shift_button   : Button
+    private lateinit var del_clr_button : Button
+    private lateinit var exp_button     : Button
+    private lateinit var pi_button      : Button
+    private lateinit var reg_stk_button : Button
+    private lateinit var shift_button   : Button
 
     private lateinit var panel_text_view: TextView
 
-    lateinit var panel_scroll : ScrollView
+    private lateinit var panel_scroll : ScrollView
 
-    lateinit var allButtons : ArrayList<ArrayList<Button>>
+    private lateinit var allButtons : ArrayList<ArrayList<Button>>
 
     private var shiftLock = false
 
@@ -199,7 +196,7 @@ class MainActivity : AppCompatActivity(){
 
     // used to return result of context menu operation
     // set in onCreateContextMenu, used/cleared in onContextItemSelected
-    var returnResult: ((String) -> Unit)? = null
+    private var returnResult: ((String) -> Unit)? = null
     override fun onContextItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.clear_item -> returnResult?.invoke("STACK\nCLR\n")
@@ -226,7 +223,7 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    fun getStackOperation(view: View, toReturn: (String) -> Unit) {
+    private fun getStackOperation(view: View, toReturn: (String) -> Unit) {
         registerForContextMenu(view)
         openContextMenu(view)
         returnResult = toReturn // to return the result of the operation.
@@ -257,7 +254,7 @@ class MainActivity : AppCompatActivity(){
         updateDisplay()
     }
 
-    val buttonInfo = hashMapOf<Int,Pair<String,String>>(
+    private val buttonInfo = hashMapOf(
             R.id.sine_button    to Pair("SIN", "ASIN"),
             R.id.cosine_button  to Pair("COS", "ACOS"),
             R.id.tangent_button to Pair("TAN", "ATAN"),
@@ -273,11 +270,6 @@ class MainActivity : AppCompatActivity(){
                 if (isUp) R.color.white_text_color
                 else R.color.red_text_color
         )!!
-        val p = buttonInfo[resId]
-        if (p == null)
-            throw RuntimeException(
-                "setShiftedButton: unrecognized resource id:${"0x%08x".format(resId)}"
-            )
         val (buttonUp, buttonDown) = buttonInfo[resId]!!
         button.text = if(isUp) buttonUp else buttonDown
         button.setTextColor(textColor)
@@ -285,35 +277,14 @@ class MainActivity : AppCompatActivity(){
     private fun setShiftedButtons(isUp: Boolean) {
         buttonInfo.map{setShiftedButton(isUp, it.key)}
     }
-    val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
+    private val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
             R.id.mult_button, R.id.plus_button, R.id.minus_button,
             R.id.reg_stk_button, R.id.del_clr_button, R.id.chs_button)
     private var useRegisterLock = false
     private fun toggleRegisterLock() {
-        fun getAllChildren(v: View): ArrayList<View>? {
-            if (v !is ViewGroup) {
-                val viewArrayList = ArrayList<View>()
-                viewArrayList.add(v)
-                return viewArrayList
-            }
-            val result = ArrayList<View>()
-            for (i in 0 until v.childCount) {
-                val child = v.getChildAt(i)
-                val viewArrayList = ArrayList<View>()
-                viewArrayList.add(v)
-                viewArrayList.addAll(getAllChildren(child)!!)
-                result.addAll(viewArrayList)
-            }
-            return result
-        }
-        // find all the buttons under our keyboard root.
-        val keyboardRoot =
-                this.findViewById<LinearLayout>(R.id.keyboard_root)
-        val buttons  =
-            getAllChildren(keyboardRoot)?.filter{it is Button} as List<Button>
         useRegisterLock = !useRegisterLock
         // enable/disable keys not used for the REG operator.
-        for (b in buttons) {
+        for (b in allButtons.flatten()) {
             if (!useRegisterKeys.contains(b.id)) {
                 b.isEnabled = !useRegisterLock
             }
@@ -345,7 +316,7 @@ class MainActivity : AppCompatActivity(){
         }
 
         var buttonText = if (button.tag != null) button.tag.toString()
-        else (button as Button).text.toString()
+        else button.text.toString()
         // If useRegisterLock is set and this isn't a math operation
         // key (eg:+-^...) ignore it.
         if (useRegisterLock && !useRegisterKeys.contains(button.id))
@@ -354,7 +325,7 @@ class MainActivity : AppCompatActivity(){
             when (buttonText) {
                 "DEG" -> {
                     angleIsDegrees = false
-                    (button as Button).setTextColor(AppCompatResources
+                    button.setTextColor(AppCompatResources
                             .getColorStateList(this, R.color.red_text_color))
                     button.setBackgroundColor(
                             ContextCompat.getColor(
@@ -366,7 +337,7 @@ class MainActivity : AppCompatActivity(){
                 }
                 "RAD" -> {
                     angleIsDegrees = true
-                    (button as Button).setTextColor(ContextCompat.getColor(
+                    button.setTextColor(ContextCompat.getColor(
                             this, android.R.color.white))
                     button.setBackgroundColor(
                             ContextCompat.getColor(
@@ -397,7 +368,7 @@ class MainActivity : AppCompatActivity(){
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
                     if (buttonText == "E") {
-                        // unless the accumulator contans 1 or more digits
+                        // unless the accumulator contains 1 or more digits
                         // and doesn't already contain an "E", ignore it.
                         if (!accumulator.contains("\\d+".toRegex())
                                 || accumulator.contains("E"))
@@ -411,17 +382,31 @@ class MainActivity : AppCompatActivity(){
                     toggleRegisterLock()
                 }
                 // change sign
-                "CHS", "+", "-", "×", "÷", "^",
+                "CHS" -> {
+                    if (accumulator.isNotEmpty())
+                        try {
+                            // we get an exception if this isn't a valid number.
+                            accumulator.toDouble()
+                            accumulator =   if (accumulator.startsWith("-"))
+                                                accumulator.removePrefix("-")
+                                            else "-$accumulator"
+                            updateDisplay()
+                        }
+                        catch (e:java.lang.Exception) {
+                            // ignore.  We used toDouble to test for accumulator
+                            // being a number.
+                        }
+                    else calculate(buttonText)
+                }
+                "+", "-", "×", "÷", "^",
                 "SWAP", "DROP", "DUP",
                 "ENTR", "STO", "RCL" -> {
                         calculate(buttonText)
                 }
                 "DEL" -> {
                     if (accumulator.isNotEmpty()) {
-                        if (isLongClick)
-                            accumulator = ""
-                        else
-                            accumulator = accumulator.dropLast(1)
+                        accumulator =   if (isLongClick) ""
+                                        else accumulator.dropLast(1)
                         if (accumulator.isEmpty()) {
                             button.text = "DROP"
                             button.isEnabled = rpnStack.isNotEmpty()
@@ -462,7 +447,7 @@ class MainActivity : AppCompatActivity(){
         return true
     }
     //set the display format and update the display.
-    fun updateParserFormat(formatString:String) {
+    private fun updateParserFormat(formatString:String) {
         val stk = "$formatString FORMAT STO".toRpnStack()
         stk.addAll(rpnStack)
         val(stack, error) = RpnParser.rpnCalculate(stk)
@@ -499,8 +484,8 @@ class MainActivity : AppCompatActivity(){
         item.setTitle(newFormat)
         if (newFormat == R.string.number_formatting_enabled) {
             val v = layoutInflater.inflate(R.layout.number_format, null)
-            val scroll_title:TextView = v.findViewById(R.id.scroll_title)
-            val commas_enabled:CheckedTextView = v.findViewById(R.id.commas_enabled)
+            val scroll_title = v.findViewById<TextView>(R.id.scroll_title)
+            val commas_enabled = v.findViewById<CheckedTextView>(R.id.commas_enabled)
             val digits_after_decimal:SeekBar = v.findViewById(R.id.digits_after_decimal)
             digits_after_decimal.progress = RpnParser.digitsAfterDecimal
             val digitsFormat = getString(R.string.digits_after_decimal)
@@ -514,9 +499,8 @@ class MainActivity : AppCompatActivity(){
                 override fun onStartTrackingTouch(seekBar: SeekBar) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar) {}
             })
-            val cb = commas_enabled
-            cb.isChecked = RpnParser.commasEnabled
-            cb.setOnClickListener { view ->
+            commas_enabled.isChecked = RpnParser.commasEnabled
+            commas_enabled.setOnClickListener { view ->
                 with(view as CheckedTextView) {
                     isChecked = !isChecked
                 }
