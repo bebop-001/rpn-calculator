@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.media.AudioManager
 import android.os.Bundle
+import android.provider.Settings.Global.putInt
 import android.util.Log
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
@@ -197,6 +198,11 @@ class MainActivity : AppCompatActivity(){
     override fun onResume() {
         super.onResume()
         angleIsDegrees = sharedPreferences.getBoolean("angleIsDegrees", true)
+        findViewById<Button>(R.id.deg_rad_button).text = if (angleIsDegrees) "DEG" else "RAD"
+        // restore the keyboard state.
+        kbdState = KbdState.values()[
+                sharedPreferences.getInt("kbdState", KbdState.shiftUp.ordinal)]
+        setShiftedButtons(kbdState)
         numberFormattingEnabled =
                 sharedPreferences.getBoolean("numberFormattingEnabled", true)
         RpnParser.setDigitsFormatting(
@@ -216,6 +222,10 @@ class MainActivity : AppCompatActivity(){
     override fun onPause() {
         super.onPause()
         saveRegisters()
+        sharedPreferences.edit()
+                .putBoolean("angleIsDegrees", angleIsDegrees)
+                .putInt("kbdState", kbdState.ordinal)
+                .apply()
     }
 
     private var rpnStack = RpnStack()
