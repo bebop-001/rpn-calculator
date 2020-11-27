@@ -17,30 +17,27 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
-import com.kana_tutor.rpncalc.RpnParser.Companion.toFormattedString
-import com.kana_tutor.rpncalc.RpnParser.RpnToken
 import com.kana_tutor.rpncalc.kanautils.*
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.keyboard_layout.*
-import kotlinx.android.synthetic.main.number_format.view.*
 import java.io.File
 import java.lang.RuntimeException
 
+import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
 
-class MainActivity : AppCompatActivity() , View.OnLongClickListener {
+
+class MainActivity : AppCompatActivity(){
     companion object {
         private lateinit var _sharedPreferences: SharedPreferences
         val sharedPreferences: SharedPreferences
             get() = _sharedPreferences
     }
 
-    private lateinit var panelTextView: TextView
     private var shiftIsUp = true
     private var angleIsDegrees = true
     private var numberFormattingEnabled = true
     private var menuNumberFormatString = R.string.number_formatting_enabled
 
     fun displayStoredValues() {
+        /*
         val sortedKeys = RpnParser.registers.keys.sorted()
         val mess =
                 if (sortedKeys.isEmpty()) "Empty"
@@ -62,8 +59,11 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
             .show()
         var tv  = dialog.findViewById<TextView>(android.R.id.message)!!
         tv.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+
+         */
     }
     fun saveRegisters() {
+        /*
         val asString = RpnParser.registers.map{ (key,value)->
             "$key ${value.toLongBitsString()}"}
                 .joinToString("\n")
@@ -79,8 +79,11 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         catch (e:java.lang.Exception) {
             throw RuntimeException("saveRegisters write $registersFile FAILD")
         }
+
+         */
     }
     fun restoreRegisters() {
+        /*
         val registers = mutableMapOf<Int, Double>()
         val registersDir = File("${getFilesDir()}/registers")
         val registersFile = File(registersDir, "registers.txt")
@@ -96,26 +99,41 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
             Log.d("restoreRegisters", "$registersFile not found")
         }
         RpnParser.registers = registers
+
+         */
     }
+    lateinit var del_clr_button : Button
+    lateinit var exp_button     : Button
+    lateinit var pi_button      : Button
+    lateinit var reg_stk_button : Button
+    lateinit var shift_button   : Button
+
+    private lateinit var panel_text_view: TextView
+
+    lateinit var panel_scroll : ScrollView
+
+    lateinit var allButtons : ArrayList<ArrayList<Button>>
+
     private var shiftLock = false
-    override fun onLongClick(v: View): Boolean {
-        fun click() = (getSystemService(Context.AUDIO_SERVICE) as AudioManager)
-                .playSoundEffect(AudioManager.FX_KEY_CLICK)
-        when (v.id) {
-            R.id.shift_button -> {
-                click()
-                shiftLock = !shiftLock
-                shiftIsUp = !shiftLock
-                setShiftedButtons(shiftIsUp)
-                return true
+
+
+    // get a list of lists of all buttons under the keyboard by
+    // row x column. 0,0 is top left, rr[lastIndex][lastIndex]
+    // bottom right.
+    private fun getAllButtonViews () : ArrayList<ArrayList<Button>> {
+        val rr = ArrayList<ArrayList<Button>>()
+        fun getViewChildren(vg: ViewGroup) {
+            val l = arrayListOf<Button>()
+            (0 until vg.childCount).forEach{i ->
+                val v = vg.getChildAt(i)
+                if (v is ViewGroup) getViewChildren(v)
+                else l.add(v as Button)
             }
-            R.id.registers_button -> {
-                click()
-                displayStoredValues()
-                return true
-            }
+            if (l.size > 0)
+                rr.add(l)
         }
-        return false
+        getViewChildren(findViewById<LinearLayout>(R.id.keyboard_root))
+        return rr
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,8 +142,32 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         _sharedPreferences = getSharedPreferences(
                 "user_prefs.txt", MODE_PRIVATE)
 
-        shift_button.setOnLongClickListener(this)
-        registers_button.setOnLongClickListener(this)
+        panel_text_view = findViewById(R.id.panel_text_view)
+        del_clr_button = findViewById(R.id.del_clr_button)
+        exp_button     = findViewById(R.id.exp_button)
+        pi_button      = findViewById(R.id.pi_button)
+        reg_stk_button = findViewById(R.id.reg_stk_button)
+        shift_button   = findViewById(R.id.shift_button)
+
+        panel_scroll   = findViewById(R.id.panel_scroll)
+
+        // get a list of all the buttons from the root view
+        // then establish our on-click listeners.
+        allButtons = getAllButtonViews()
+        allButtons.flatten().forEach{ button->
+            button.setOnLongClickListener{
+                // Play a click sound.
+                (getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+                        .playSoundEffect(AudioManager.FX_KEY_CLICK)
+                buttonClickHandler(it as Button, true)
+                true
+            }
+            button.setOnClickListener{
+                buttonClickHandler(it as Button, false)
+            }
+        }
+
+
     }
 
     override fun onResume() {
@@ -143,7 +185,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                     R.string.number_formatting_enabled
                 else
                     R.string.number_formatting_disabled
-        panelTextView = findViewById(R.id.panelTextView)
+        panel_text_view = findViewById(R.id.panel_text_view)
         restoreRegisters()
     }
 
@@ -152,7 +194,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         saveRegisters()
     }
 
-    private var rpnStack = RpnParser.RpnStack()
+    private var rpnStack = RpnStack()
     private var accumulator = ""
 
     // used to return result of context menu operation
@@ -189,6 +231,13 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         openContextMenu(view)
         returnResult = toReturn // to return the result of the operation.
     }
+    private fun updateDisplay() {
+        panel_text_view.text = rpnStack.joinToString("\n")
+        { it.token } + "\n" + accumulator
+        panel_scroll.post { // scroll to the bottom of the screen.
+            panel_scroll.fullScroll(ScrollView.FOCUS_DOWN)
+        }
+    }
 
     private fun calculate(text: String = "") {
         rpnStack.addAll("$accumulator\n$text"
@@ -198,20 +247,14 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 .split("\\s+".toRegex())
                 .filter { it.isNotEmpty() }
                 .map { RpnToken(it) })
-
         accumulator = ""
-        try {
-            rpnStack = RpnParser.rpnCalculate(rpnStack)
-        }
-        catch (e: RpnParserException) {
+        val (stack, error) = RpnParser.rpnCalculate(rpnStack)
+        rpnStack = stack
+        if (error.isNotEmpty())
             Toast.makeText(this,
-                    "$e", Toast.LENGTH_LONG)
+                    "ERROR: $error", Toast.LENGTH_LONG)
                     .show()
-        }
-        panelTextView.text = rpnStack.joinToString("\n") { it.token } + "\n"
-        panel_scroll.post { // scroll to the bottom of the screen.
-            panel_scroll.fullScroll(ScrollView.FOCUS_DOWN)
-        }
+        updateDisplay()
     }
 
     val buttonInfo = hashMapOf<Int,Pair<String,String>>(
@@ -244,7 +287,7 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
     }
     val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
             R.id.mult_button, R.id.plus_button, R.id.minus_button,
-            R.id.registers_button, R.id.del_clr_button, R.id.chs_button)
+            R.id.reg_stk_button, R.id.del_clr_button, R.id.chs_button)
     private var useRegisterLock = false
     private fun toggleRegisterLock() {
         fun getAllChildren(v: View): ArrayList<View>? {
@@ -290,45 +333,45 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                         ContextCompat.getColorStateList(this, buttonColor))
     }
     @SuppressLint("SetTextI18n")
-    fun btnOnClick(v: View) {
+    private fun buttonClickHandler (button: Button, isLongClick:Boolean = false) {
         @SuppressLint("SetTextI18n")
         fun panelTextAppend(str: String): String {
-            val t = panelTextView.text.toString()
-            panelTextView.text = t + str
+            val t = panel_text_view.text.toString()
+            panel_text_view.text = t + str
             panel_scroll.post { // scroll to the bottom of the screen.
                 panel_scroll.fullScroll(ScrollView.FOCUS_DOWN)
             }
             return str
         }
 
-        var buttonText = if (v.tag != null) v.tag.toString()
-        else (v as Button).text.toString()
+        var buttonText = if (button.tag != null) button.tag.toString()
+        else (button as Button).text.toString()
         // If useRegisterLock is set and this isn't a math operation
         // key (eg:+-^...) ignore it.
-        if (useRegisterLock && !useRegisterKeys.contains(v.id))
+        if (useRegisterLock && !useRegisterKeys.contains(button.id))
             return
         try {
             when (buttonText) {
                 "DEG" -> {
                     angleIsDegrees = false
-                    (v as Button).setTextColor(AppCompatResources
+                    (button as Button).setTextColor(AppCompatResources
                             .getColorStateList(this, R.color.red_text_color))
-                    v.setBackgroundColor(
+                    button.setBackgroundColor(
                             ContextCompat.getColor(
                                     this, R.color.shift_down_bg))
-                    v.text = "RAD"
+                    button.text = "RAD"
                     sharedPreferences.edit()
                             .putBoolean("angleIsDegrees", angleIsDegrees)
                             .apply()
                 }
                 "RAD" -> {
                     angleIsDegrees = true
-                    (v as Button).setTextColor(ContextCompat.getColor(
+                    (button as Button).setTextColor(ContextCompat.getColor(
                             this, android.R.color.white))
-                    v.setBackgroundColor(
+                    button.setBackgroundColor(
                             ContextCompat.getColor(
                                     this, R.color.operation_button))
-                    v.text = "DEG"
+                    button.text = "DEG"
                     sharedPreferences.edit()
                             .putBoolean("angleIsDegrees", angleIsDegrees)
                             .apply()
@@ -348,15 +391,8 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                     panelTextAppend(buttonText)
                 }
                 "STK" -> {
-                    getStackOperation(v) { result ->
+                    getStackOperation(button) { result ->
                         calculate(result)
-                    }
-                }
-                "DEL" -> {
-                    if (accumulator.isNotEmpty()) {
-                        accumulator = accumulator.dropLast(1)
-                        panelTextView.text =
-                                panelTextView.text.toString().dropLast(1)
                     }
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
@@ -380,22 +416,21 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                 "ENTR", "STO", "RCL" -> {
                         calculate(buttonText)
                 }
-                "CLR", "DEL" -> {
-                    if (useRegisterLock) {
-                        calculate("\nREG\nCLR\n")
-                    }
-                    else if(!shiftIsUp) {
-                        if (accumulator.isEmpty() && rpnStack.isNotEmpty()) {
-                            calculate("DROP")
-                        }
-                        else if (panelTextView.text.toString().isNotEmpty()) {
+                "DEL" -> {
+                    if (accumulator.isNotEmpty()) {
+                        if (isLongClick)
                             accumulator = ""
-                            var t = panelTextView.text.toString()
-                            while (!t.endsWith("\n") && t.isNotEmpty())
-                                t = t.dropLast(1)
-                            panelTextView.text = t
+                        else
+                            accumulator = accumulator.dropLast(1)
+                        if (accumulator.isEmpty()) {
+                            button.text = "DROP"
+                            button.isEnabled = rpnStack.isNotEmpty()
                         }
+                        updateDisplay()
                     }
+                }
+                "CLR" -> {
+                    calculate("\nREG\nCLR\n")
                 }
                 "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                     val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
@@ -405,11 +440,11 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
             }
             // if this a shifted key and shift is down and shift lock is off,
             // turn shift off.
-            if (buttonInfo.containsKey(v.id) && !shiftIsUp && v.id != R.id.shift_button) {
+            if (buttonInfo.containsKey(button.id) && !shiftIsUp && button.id != R.id.shift_button) {
                 shiftIsUp = true
                 setShiftedButtons(shiftIsUp)
             }
-            if (useRegisterLock && useRegisterKeys.contains(v.id) && v.id != R.id.registers_button) {
+            if (useRegisterLock && useRegisterKeys.contains(button.id) && button.id != R.id.reg_stk_button) {
                 toggleRegisterLock()
             }
 
@@ -426,16 +461,33 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         title = getString(R.string.app_label)
         return true
     }
+    //set the display format and update the display.
+    fun updateParserFormat(formatString:String) {
+        val stk = "$formatString FORMAT STO".toRpnStack()
+        stk.addAll(rpnStack)
+        val(stack, error) = RpnParser.rpnCalculate(stk)
+        if (error.isNotEmpty())
+            Log.d("updateParserFormat", "error:$error")
+        rpnStack = stack
+        panel_text_view.text =
+            rpnStack.joinToString("\n") { it.token } +
+            "\n" + accumulator
+        sharedPreferences.edit()
+                .putString("rpnDigitFormat", formatString)
+                .apply()
+    }
 
     private fun numberFormatControl(item: MenuItem): Boolean {
         fun setNewFormat(digits: Int, commas: Boolean) {
+            val formatString = "format:fixed:${if(commas) "on" else "off"}:$digits"
             sharedPreferences.edit()
                     .putBoolean("numberFormattingEnabled", true)
                     .putInt("digitsAfterDecimal", digits)
                     .putBoolean("commasEnabled", commas)
+                    .putString("rpnDigitFormat", formatString)
                     .apply()
             numberFormattingEnabled = true
-            RpnParser.setDigitsFormatting(true, digits, commas)
+            updateParserFormat(formatString)
         }
 
         val newFormat =
@@ -447,20 +499,22 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
         item.setTitle(newFormat)
         if (newFormat == R.string.number_formatting_enabled) {
             val v = layoutInflater.inflate(R.layout.number_format, null)
-            val sb = v.digits_after_decimal!!
-            sb.progress = RpnParser.digitsAfterDecimal
+            val scroll_title:TextView = v.findViewById(R.id.scroll_title)
+            val commas_enabled:CheckedTextView = v.findViewById(R.id.commas_enabled)
+            val digits_after_decimal:SeekBar = v.findViewById(R.id.digits_after_decimal)
+            digits_after_decimal.progress = RpnParser.digitsAfterDecimal
             val digitsFormat = getString(R.string.digits_after_decimal)
-            v.scroll_title.text = digitsFormat.format(RpnParser.digitsAfterDecimal)
+            scroll_title.text = digitsFormat.format(RpnParser.digitsAfterDecimal)
             // read digits.
-            sb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            digits_after_decimal.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                    v.scroll_title.text = digitsFormat.format(progress)
+                    scroll_title.text = digitsFormat.format(progress)
                 }
 
                 override fun onStartTrackingTouch(seekBar: SeekBar) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar) {}
             })
-            val cb = v.commas_enabled!!
+            val cb = commas_enabled
             cb.isChecked = RpnParser.commasEnabled
             cb.setOnClickListener { view ->
                 with(view as CheckedTextView) {
@@ -472,14 +526,14 @@ class MainActivity : AppCompatActivity() , View.OnLongClickListener {
                     .setView(v)
                     .setPositiveButton(R.string.done) { dialog, _ ->
                         setNewFormat(
-                                v.digits_after_decimal.progress, v.commas_enabled.isChecked
+                                digits_after_decimal.progress, commas_enabled.isChecked
                         )
                         dialog.dismiss()
                     }
                     .show()
         }
         else {
-            RpnParser.setDigitsFormatting(false)
+            updateParserFormat("format:off")
         }
         return true
     }

@@ -14,9 +14,9 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
-                android:id="@+id/del_clr_button"
+                android:id="@+id/reg_stk_button"
                 style="@style/operation_button"
-                android:text="DEL" />
+                android:text="REG" />
             <Button
                 android:id="@+id/deg_rad_button"
                 style="@style/operation_button"
@@ -25,13 +25,12 @@
                 style="@style/operation_button"
                 android:text="?" />
             <Button
-                android:id="@+id/registers_button"
                 style="@style/operation_button"
-                android:text="REG" />
+                android:text="?" />
             <Button
                 android:id="@+id/sto_rcl_button"
                 style="@style/operation_button"
-                android:text="STO" />
+                android:text="?" />
             <Button
                 android:id="@+id/shift_button"
                 style="@style/operation_button"
@@ -44,8 +43,9 @@
             android:layout_height="wrap_content">
 
             <Button
+                android:id="@+id/exp_button"
                 style="@style/operation_button"
-                android:text="E"
+                android:text="EXP"
                 android:textColor="@color/orange_text_color" />
             <Button
                 android:id="@+id/sine_button"
@@ -70,6 +70,7 @@
             android:layout_height="wrap_content">
 
             <Button
+                android:id="@+id/pi_button"
                 style="@style/operation_button"
                 android:text="π"
                 android:textColor="@color/orange_text_color" />
@@ -95,9 +96,9 @@
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
             <Button
-                android:tag="STK"
+                android:id="@+id/del_clr_button"
                 style="@style/operation_button"
-                android:text="STK" />
+                android:text="DEL" />
             <Button
                 android:id="@+id/tangent_button"
                 style="@style/operation_button"

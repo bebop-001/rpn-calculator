@@ -20,19 +20,16 @@ fun Double.toLongBitsString() : String {
     }
     return rv
 }
-fun String.longBitStringToDouble() : Double {
-    var rv = Double.NaN
+fun String.longBitsToDoubleOrNull() : Double? {
+    var rv : Double? = null
     try {
         rv = java.lang.Double.longBitsToDouble(this.toLong(RADIX))
     }
-    catch (e: Exception) {
-        println("longBitsToDouble \"$this\" FAILED:$e")
-    }
+    catch (e: Exception) { /* ignore */}
     return rv
 }
 
 fun HashMap<Int, Double>.toJson() : String{
-    val x = nextDouble()
     val rv = "{" +
     this.map{(key, value) -> "\"$key\" : \"${value.toLongBitsString()}\""}
             .joinToString(",") + "}\n"

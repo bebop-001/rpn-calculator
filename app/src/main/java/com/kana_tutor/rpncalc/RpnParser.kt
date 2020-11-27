@@ -1,84 +1,36 @@
-@file:Suppress("unused")
+@file:Suppress("unused", "ObjectPropertyName")
 
 package com.kana_tutor.rpncalc
 
-import java.lang.Double.NaN
-import java.lang.Double.isNaN
+import com.kana_tutor.rpncalc.RpnMap.Companion.rm
+import com.kana_tutor.rpncalc.RpnStack.Companion.peekLast
 import java.text.DecimalFormat
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.sin
-import kotlin.math.tan
+import kotlin.math.*
+
+import com.kana_tutor.rpncalc.RpnStack.Companion.rmLast
+import com.kana_tutor.rpncalc.RpnToken.Companion.asDouble
+import com.kana_tutor.rpncalc.RpnToken.Companion.asIndex
+import com.kana_tutor.rpncalc.RpnToken.Companion.fromStorable
+import com.kana_tutor.rpncalc.RpnToken.Companion.isIndex
+import com.kana_tutor.rpncalc.RpnToken.Companion.isNumber
+import com.kana_tutor.rpncalc.RpnToken.Companion.toStorable
+import java.lang.RuntimeException
 
 class RpnParserException (message:String) : Exception(message)
 const val RADIX = 36
+val registerRange = 1..100
 class RpnParser private constructor() {
-    data class RpnToken(var token: String, var value : Double = NaN) {
-        val original = token
-        init {
-            if (isNaN(value)) {
-                try {
-                    val d = token.toDouble()
-                        value = d
-                }
-                catch (e:Exception) {
-                    // using exception to check string as double. */
-                }
-            }
-        }
-        override fun toString(): String {return "$token:$value:$original"}
-    }
-    class RpnStack() : java.util.Stack<RpnToken>() {
-        companion object {
-            fun String.toRpnStack() : RpnStack {
-                val rpnStack = RpnStack()
-                val strTokens  = split("\n")
-                        .filter{"^\\s*#".toRegex().find(it) == null}
-                        .joinToString("\n")
-                        .split("\\s+".toRegex())
-                        .filter{it.isNotEmpty()}
-                strTokens.forEach{rpnStack.add(RpnToken(it))}
-                return rpnStack
-            }
-        }
-        enum class StkError (val errorType:String) {
-            empty("Stack is empty"),
-            conversion("Conversion error"),
-        }
-
-        fun peek(offset:Int = 0) : RpnToken? {
-            return (
-                if (this.lastIndex + offset >= 0)
-                    this[this.lastIndex + offset]
-                else
-                    null
-            )
-        }
-        fun shift()  = this.removeAt(0)
-        fun unshift(tok :RpnToken)  = this.add(0, tok)
-        fun popD(): Double {
-            var (token, value) = this.pop()
-            // filter out any commas in the string.
-            if (token == "π" || token == "PI")
-                value = Math.PI
-            return value
-        }
-        fun pop(offset : Int = 0) :RpnToken? {
-            return (
-                    if ((this.lastIndex + offset) >= 0) this[this.lastIndex + offset]
-                    else null)
-        }
-
-
-    }
     companion object {
-        var registers = mutableMapOf<Int, Double>()
+        var registers = RpnMap()
         var printTrace = false
-        fun printTrace (trace : String) {
-            if(printTrace) println(trace)
-        }
-        fun clearRegisters () {
-            registers.clear()
+        var rpnError = ""
+        private var _trace_  = false
+        // debug trace statement.  Turn trace on/off
+        // if the trace string is trace:on/trace:off
+        private fun trace(trace : String) {
+            if (trace == "trace:on") _trace_ = true
+            else if (trace == "trace:off") _trace_ = false
+            if(_trace_) println(trace)
         }
         private var digitsFormatIsEnabled = true
         var digitsAfterDecimal = 3
@@ -86,15 +38,37 @@ class RpnParser private constructor() {
         var commasEnabled = true
             private set
 
-        private var digitsFormat = "#,##0.000"
-        // syntax: "on|off:digits:on|off digitsFormat" for enable:digits after decimal:comma enable
-        fun setDigitsFormatting(enable : Boolean, digits: Int = 4, commas : Boolean = true) {
+        private var digitsFormat = ""
+        private var formatString = ""
+        // syntax: "on|off:digits:on|off digitsFormat"
+        // for enable:digits after decimal:comma enable
+        fun setDigitsFormatting(
+            enable : Boolean, digits: Int = 4, commas : Boolean = true
+        ) {
             digitsFormatIsEnabled = enable
             if (enable) {
                 commasEnabled = commas
                 digitsAfterDecimal = digits
-                digitsFormat = if (commas) "#,##0" else "0"
+                digitsFormat = if (commas) "#,##0" else "#0"
                 digitsFormat += if (digits > 0) "." + "0".repeat(digits) else ""
+            }
+        }
+        private fun RpnToken.setDigitsFormatting() {
+            formatString = this.token
+            formatString.apply {
+                val split = split(":")
+                when {
+                    startsWith("format:off") -> setDigitsFormatting(false)
+                    startsWith("format:fixed:on:") && split.size == 4 ->
+                        setDigitsFormatting(true,
+                                commas = true,
+                                digits = split.last().toInt())
+                    startsWith("format:fixed:off:") && split.size == 4 ->
+                        setDigitsFormatting(true,
+                                commas = false,
+                                digits = split.last().toInt())
+                    else -> throw RuntimeException("unrecognized digit format: $this")
+                }
             }
         }
         fun Double.toFormattedString(): String {
@@ -105,201 +79,283 @@ class RpnParser private constructor() {
             }
             else this.toString()
         }
+        private fun String.mathOp(lVal:RpnToken, rVal:RpnToken) : RpnToken {
+            var result = Double.NaN
+            val rv = rVal.value; val lv = lVal.value
+            try {
+                result = when (this) {
+                    "+" -> lv + rv
+                    "-" -> lv - rv
+                    "×", "*" -> lv * rv
+                    "÷", "/" -> lv / rv
+                    "^" -> lv.pow(rv)
+                    else -> {
+                        rpnError = "mathOp: %this: unrecognized operator."
+                        Double.NaN
+                    }
+                }
+            }
+            catch (e:Exception) {
+                rpnError = "mathOp $this, $lv, $rv: Exception $e"
+            }
+            return RpnToken(result)
+        }
 
         // from https://rosettacode.org/wiki/Parsing/RPN_calculator_algorithm
-        fun rpnCalculate(inStack : RpnStack): RpnStack {
-            fun fromFormattedString(str:String) : Double =
-                str.split(",").joinToString().toDouble()
-            fun RpnStack.pushD(d: Double) : RpnToken {
-                val newToken =  if (digitsFormatIsEnabled)
-                        RpnToken(d.toFormattedString(), d)
-                    else
-                        RpnToken(d.toString(), d)
-                this.push(newToken)
-                return newToken
-            }
-
-            fun RpnStack.lastEquals(token: String): Boolean {
-                val lastIndex = this.lastIndex
-                return lastIndex >= 0 && this[lastIndex].token == token
-            }
-
-            fun RpnToken.chs() : RpnToken {
-                var(_, value) = this
-                value *= -1
-                return RpnToken(value.toFormattedString(), value)
-            }
-            fun Double.degreesToRadians(): Double = this * kotlin.math.PI / 180
-            fun Double.radiansToDegrees(): Double  = this * 180 / kotlin.math.PI
-            fun String.isValidIndex(range: IntRange):Boolean{
-                var rv = false
-                try {
-                    val idx = this.toInt()
-                    rv = idx in range
-                }
-                catch (e:Exception) {/* ignore, using toInt to test for valid int. */}
-                return rv
-            }
-            if (inStack.isEmpty()) return RpnStack()
-            printTrace("Trace: For: ${inStack.map{"$it"}}")
-            // format token for any token that has a value.
-            inStack.filter{!isNaN(it.value)}
-                    .map{it.token = it.value.toFormattedString()}
-            when {
-                inStack.lastEquals("CHS")  -> {
-                    inStack.pop()
-                    inStack.push(inStack.pop().chs())
-                }
-                inStack.lastEquals("SWAP") -> {
-                    inStack.pop()
-                    val t1 = inStack.pop()
-                    val t2 = inStack.pop()
-                    inStack.push(t1)
-                    inStack.push(t2)
-                }
-                inStack.lastEquals("DROP") -> {
-                    inStack.pop()
-                    inStack.pop()
-                }
-            }
-            printTrace("Trace: after preprocess: ${inStack.map{"$it"}}")
+        fun rpnCalculate(
+            inStack : RpnStack,
+            @Suppress("UNUSED_PARAMETER") testId:Int = -1
+        ): Pair<RpnStack, String> {
             val outStack = RpnStack()
-            var angleIsDegrees = false
-            while (inStack.size > 0) {
-                val next = inStack.shift()
-                printTrace("Trace: next:$next inStack:${inStack.map{"$it"}} " +
-                        "outStack:${outStack.map{"$it"}}")
-                when (next.token) {
+            fun Double.degreesToRadians(): Double = this * PI / 180
+            fun Double.radiansToDegrees(): Double  = this * 180 / PI
+            rpnError = ""
+            trace("Trace: For: ${inStack.map{"$it"}}")
+            trace("Trace: after preprocess: ${inStack.map{"$it"}}")
+            next@while (rpnError.isEmpty() && inStack.size > 0) {
+                val current = inStack.removeAt(0)!!
+                if (current.isNumber()!!) {
+                    current.token = current.value.toFormattedString()
+                    outStack.add(current)
+                    continue@next
+                }
+                if (current.token.contains(":")) {
+                    val tok = current.token
+                    try {
+                        when {
+                            tok == "trace:on" || tok == "trace:off" -> trace(tok)
+                            tok.startsWith("STORABLE:") -> {
+                                val restored =  current.fromStorable()
+                                if (restored != null) {
+                                    val t = restored.token.split("=")
+                                    if (t.size == 2 && t[0] == "REG" && t[1].toIntOrNull() != null) {
+                                        when (t[1].toInt()) {
+                                            in registerRange ->
+                                                registers[t[1].toInt()] = restored
+                                            -1 -> outStack.add(RpnToken(restored.value))
+                                            else -> rpnError = "Bad storable token: $current"
+                                        }
+                                    }
+                                    else outStack.add(restored)
+                                }
+                                else rpnError = "Bad storable token: $current"
+                            }
+                            tok.startsWith("format:") -> outStack.add(current)
+                            else -> rpnError = "Unrecognized : operator: \"$tok\""
+                        }
+                    }
+                    catch(e:Exception) {
+                        rpnError = "Parsing \"$tok\"\nError: $e"
+                    }
+                    continue@next
+                }
+
+                trace("Trace: processing \"${current.token}\"\n\t" +
+                        "in  = ${inStack.map{"$it"}}\n\t" +
+                        "out = ${outStack.map{"$it"}}")
+                when (current.token) {
+                    "CHS" -> {
+                        if (outStack.isNotEmpty() && outStack.peekLast().isNumber()!!) {
+                            val d = outStack.rmLast()!!.value
+                            outStack.add(RpnToken(d * -1))
+                        }
+                        else rpnError = "CHS:$rpnError"
+                    }
+                    "DROP" -> {
+                        if (outStack.peekLast() != null)
+                            outStack.rmLast()
+                        else rpnError = "DROP:$rpnError"
+                    }
+                    "SWAP" -> {
+                        if (outStack.size >= 2) {
+                            outStack.add(outStack.rmLast(-1))
+                        }
+                        else rpnError = "SWAP FAILED: less than two objects on stack."
+                    }
                     // op that expects two floats on stack.
                     "+", "-", "×", "*", "÷", "/", "^" -> {
-                        val d1 = outStack.popD()
-                        val d2 = outStack.popD()
-                        when (next.token) {
-                            "+"      -> outStack.pushD(d2 + d1)
-                            "-"      -> outStack.pushD(d2 - d1)
-                            "×", "*" -> outStack.pushD(d2 * d1)
-                            "÷", "/" -> outStack.pushD(d2 / d1)
-                            "^"      -> outStack.pushD(d2.pow(d1))
+                        if (outStack.size >= 2) {
+                            var rVal = outStack.rmLast()!!
+                            var lVal = outStack.rmLast()!!
+                            if (rVal.token == "REG") {
+                                if (outStack.isEmpty())
+                                    rpnError = "${lVal.token} REG ${current.token}: Stack is empty."
+                                else {
+                                    val idx = lVal.asIndex()!!
+                                    rVal = outStack.removeLast()
+                                    lVal  =
+                                            if (registers.containsKey(idx))
+                                                registers[idx]!!
+                                            else RpnToken(0.0)
+                                    registers[idx] = current.token.mathOp(lVal, rVal)
+                                }
+                            }
+                            else if (rVal.isNumber()!! && lVal.isNumber()!!) {
+                                outStack.add(current.token.mathOp(lVal, rVal))
+                            }
+                            else {
+                                println("${lVal.token}:${rVal.token}")
+                            }
                         }
+                        else rpnError = "\"${current.token}: need at least 2 values."
                     }
+                    "STACK", "LIST", "ALL", "FORMAT" -> { outStack.add(current)}
                     "REG" -> {
-                        // if the previous value is a valid index into the registers
-                        // hash, set the next value on the out stack to the index.
-                        val previous = outStack.peek()
-                        if (previous == null)
-                            throw RpnParserException("RpnParser:REG:Stack is empth.")
-                        if (!previous.original.isValidIndex(1..100))
-                            throw RpnParserException("RpnParser:REG:${previous.original}:" +
-                                "Not a valid register index.")
-                        next.value = previous.value
-                        outStack.pop()
-                        outStack.push(next)
-                    }
-                    "STO" -> {
-                        val stoExceptionString =
-                            "Please select a register between 1 and 100.\nbad index:%s"
-                        val idxToken = outStack.pop()
-                        val newRegValue = outStack.pop().value
-                        val idx : Int
-                        try { idx = idxToken.original.toInt()}
-                        catch (e:Exception) {
-                            throw RpnParserException(
-                                    stoExceptionString.format(idxToken.original)
-                            )
+                        if (outStack.isNotEmpty()) {
+                            val lastElement = outStack.peekLast()!!
+                            if (lastElement.token == "ALL" || lastElement.isIndex()!!)
+                                outStack.add(current)
+                            else rpnError = "${lastElement.token} REG: ${RpnToken.error}"
                         }
-                        if (idx < 1 || idx > 100)
-                            throw RpnParserException(
-                                    stoExceptionString.format(idxToken.original)
-                            )
-                        registers[idx] = newRegValue
-                    }
-                    "RCL" -> {
-                        val idxToken = outStack.pop() ?:
-                            throw RpnParserException("${next.token} index not found.")
-                        val idx : Int = try {idxToken.original.toInt()}
-                        catch (e:Exception) {
-                            throw RpnParserException("${next.token}: "
-                                    + "${idxToken.original}: not an integer.")
-                        }
-                        if (idx !in  1..100) {
-                            throw RpnParserException("${next.token}: "
-                                    + "index not between 1 and 100:$idx")
-                        }
-                        outStack.pushD(registers[idx]!!)
+                        else rpnError = "REG: stack is empty"
                     }
                     "CLR" -> {
-                        val reg = outStack.peek()
-                        if (reg == null) {
-                            throw RpnParserException("RpnParser: no register found.")
+                        var op = outStack.rmLast()
+                        if (op != null) {
+                            if (op.token == "STACK") {
+                                outStack.clear()
+                            }
+                            else if (op.token == "REG") {
+                                // REG checked so we know this is all or an index.
+                                op = outStack.rmLast()!!
+                                if (op.token == "ALL") {
+                                    registers.clear()
+                                }
+                                else if (op.isIndex()!!) {
+                                    if (registers.rm(op.asIndex()!!) == null)
+                                        rpnError = "${op.asIndex()} REG CLR: register is empty"
+                                }
+                                else rpnError = "${op.token} REG CLR: unexpected ${op.token}"
+                            }
+                            else rpnError = "CLR: unexpected token: ${op.token}"
                         }
-                        else if (reg.token == "REG") {
-                            if (registers.containsKey(reg.value.toInt()))
-                                registers.remove(reg.value.toInt())
-                            else println("RpnParser.register.clear: " +
-                                    " Register ${reg.value.toInt()} not in use.")
-                            outStack.pop() // remove the index.
-                        }
-                        else if (reg.token == "STACK") {
-                            outStack.clear()
-                        }
-                        else {
-                            throw RpnParserException("CLR: unexpected predicate:\"${reg.token}\"")
-                        }
+                        else rpnError = "CLR: empty stack"
                     }
-                    "RAD"                             -> {
-                        angleIsDegrees = false
-                    }
-                    "DEG"                             -> {
-                        angleIsDegrees = true
-                    }
-                    "SIN", "COS", "TAN"               -> {
-                        var angle = outStack.popD()
-                        if (angleIsDegrees)
-                            angle = angle.degreesToRadians()
-                        val result = when (next.token) {
-                            "SIN" -> sin(angle)
-                            "COS" -> cos(angle)
-                            "TAN" -> tan(angle)
-                            else  -> {
-                                0.0 /* can't happen. */
+                    "STO", "RCL", "STORABLE" -> {
+                        if (outStack.size >= 1) {
+                            val v1 = outStack.rmLast()!!
+                            if (current.token == "STORABLE" && v1.token == "ALL") {
+                                for(i in outStack.indices)
+                                    outStack[i] = outStack[i].toStorable()
+                            }
+                            else if (outStack.size >= 1) {
+                                val v2 = outStack.rmLast()!!
+                                when (current.token) {
+                                    "STO" -> {
+                                        when {
+                                            v2.isIndex()!! -> registers.set(
+                                                v2.asIndex()!!,
+                                                outStack.rmLast()!!)
+                                            v1.token == "FORMAT" ->
+                                                v2.setDigitsFormatting()
+                                            else -> rpnError =
+                                                "${v2.token} STO: bad command."
+                                                
+                                        }
+                                    }
+                                    // Recall a register or "ALL"
+                                    "RCL" -> {
+                                        when {
+                                            v2.token == "ALL" -> {
+                                                registers.keys.map { outStack.add(registers[it]) }
+                                            }
+                                            v2.token == "FORMAT" -> outStack.add(RpnToken(formatString))
+                                            v2.isIndex()!! -> {
+                                                val idx = v2.asIndex()!!
+                                                if (registers.containsKey(idx))
+                                                    outStack.add(registers[idx])
+                                                else rpnError = "$idx RCL: register[$idx] is empty."
+                                            }
+                                            else -> rpnError = "${v2.token} REG RCL: ${v2.token}: " +
+                                                    "expected index or \"ALL\":" + rpnError
+                                        }
+                                    }
+                                    "STORABLE" -> {
+                                        registers.keys.map {
+                                            outStack.add(registers[it]!!.toStorable(it))
+                                        }
+                                    }
+                                }
                             }
                         }
-                        outStack.pushD(result)
+                        else rpnError = "${current.token}: need at least 2 elements on stack. found ${outStack.size}"
                     }
-                    "ASIN", "ACOS", "ATAN"            -> {
-                        var value = outStack.popD()
-                        if (angleIsDegrees)
-                            value = value.degreesToRadians()
-                        var rv = when (next.token) {
-                            "ASIN" -> kotlin.math.asin(value)
-                            "ACOS" -> kotlin.math.acos(value)
-                            "ATAN" -> kotlin.math.atan(value)
-                            else   -> {
-                                0.0 /* can't happen. */
+                    "RAD", "DEG" -> {
+                        outStack.add(current)
+                    }
+                        "SIN", "COS", "TAN" -> {
+                            val degOrRad = outStack.peekLast()?.token
+                            var angle = outStack.peekLast(-1)?.asDouble()
+                            if (degOrRad != null && angle != null) {
+                                angle = when (degOrRad) {
+                                    "RAD" -> angle
+                                    "DEG" -> angle.degreesToRadians()
+                                    else -> null
+                                }
+                                if (angle == null)
+                                    rpnError = "${current.token}: \"$degOrRad\": not DEG or RAD: $degOrRad"
+                                else {
+                                    val result = when (current.token) {
+                                        "SIN" -> sin(angle)
+                                        "COS" -> cos(angle)
+                                        "TAN" -> tan(angle)
+                                        else -> {
+                                            0.0 /* can't happen. */
+                                        }
+                                    }
+                                    outStack.rmLast()
+                                    outStack.setLast(RpnToken(result))
+                                }
+                            }
+                            else rpnError = "$current.token:$rpnError"
+                        }
+                        "ASIN", "ACOS", "ATAN" -> {
+                            var degOrRad = outStack.peekLast()?.token
+                            val value = outStack.peekLast(-1)?.asDouble()
+                            if (degOrRad != null && value != null) {
+                                degOrRad = when (degOrRad) {
+                                    "RAD" -> degOrRad
+                                    "DEG" -> degOrRad
+                                    else -> null
+                                }
+                                if (degOrRad == null)
+                                    rpnError = "${current.token}: \"$degOrRad\": not DEG or RAD: $degOrRad"
+                                else {
+                                    var angle = when (current.token) {
+                                        "ASIN" -> asin(value)
+                                        "ACOS" -> acos(value)
+                                        "ATAN" -> atan(value)
+                                        else -> {
+                                            0.0 /* can't happen. */
+                                        }
+                                    }
+                                    if (degOrRad == "DEG")
+                                        angle = angle.radiansToDegrees()
+                                    outStack.rmLast()
+                                    outStack.setLast(RpnToken(angle))
+                                }
                             }
                         }
-                        if (angleIsDegrees)
-                            rv = rv.radiansToDegrees()
-                        outStack.pushD(rv)
+                        "DUP" -> {
+                            val last = outStack.peekLast()
+                            if (last != null)
+                                outStack.add(last)
+                            else
+                                rpnError = "DUP:empty stack"
+                        }
+                        // push an empty token on the stack. ENTR caused call
+                        // to parser.  That's all that we need.
+                        "ENTR" -> {
+                        }
+                        // push the value on the stack.  It's probably a number.
+                        else -> {
+                            outStack.add(current)
+                            rpnError = "Unrecognized operation: ${current.token}"
+                        }
                     }
-                    "DUP"                             -> {
-                        val t = outStack.pop()
-                        outStack.push(t)
-                        outStack.push(t)
-                    }
-
-                    // push an empty token on the stack. ENTR caused call
-                    // to parser.  That's all that we need.
-                    "ENTR" -> {
-                    }
-                    // push the value on the stack.  It's probably a number.
-                    else                              -> {
-                        outStack.push(next)
-                    }
-                }
             }
-            printTrace("Trace: return: ${outStack.map{it}}")
-            return outStack
+            trace("Trace: return: ${outStack.map{it}}")
+            return Pair(outStack, rpnError)
         }
     }
 }
