@@ -5,6 +5,7 @@ package com.kana_tutor.rpncalc
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.ColorStateList
 import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
@@ -133,6 +134,16 @@ class MainActivity : AppCompatActivity(){
         return rr
     }
 
+    lateinit var red_text_color        : ColorStateList
+    lateinit var white_text_color      : ColorStateList
+    lateinit var orange_text_color     : ColorStateList
+    lateinit var green_text_color      : ColorStateList
+
+    var shift_down_bg                   = -1
+    var number_bg                    = -1
+    var operation_bg                = -1
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -147,6 +158,23 @@ class MainActivity : AppCompatActivity(){
         shift_button   = findViewById(R.id.shift_button)
 
         panel_scroll   = findViewById(R.id.panel_scroll)
+
+        red_text_color = ContextCompat.getColorStateList(
+                applicationContext, R.color.red_text_color)!!
+        white_text_color = ContextCompat.getColorStateList(
+                applicationContext, R.color.white_text_color)!!
+        orange_text_color = ContextCompat.getColorStateList(
+                applicationContext, R.color.orange_text_color)!!
+        green_text_color = ContextCompat.getColorStateList(
+                applicationContext, R.color.green_text_color)!!
+
+        shift_down_bg = ContextCompat.getColor(
+                applicationContext, R.color.shift_down_bg)
+        number_bg = ContextCompat.getColor(
+                applicationContext, R.color.number_bg)
+        operation_bg = ContextCompat.getColor(
+                applicationContext, R.color.operation_bg)
+
 
         // get a list of all the buttons from the root view
         // then establish our on-click listeners.
@@ -265,11 +293,9 @@ class MainActivity : AppCompatActivity(){
 
     private fun setShiftedButton(isUp:Boolean, resId:Int) {
         val button = findViewById<Button>(resId)!!
-        val textColor = ContextCompat.getColorStateList(
-                this,
-                if (isUp) R.color.white_text_color
-                else R.color.red_text_color
-        )!!
+        val textColor =
+                if (isUp) white_text_color
+                else red_text_color
         val (buttonUp, buttonDown) = buttonInfo[resId]!!
         button.text = if(isUp) buttonUp else buttonDown
         button.setTextColor(textColor)
@@ -296,12 +322,10 @@ class MainActivity : AppCompatActivity(){
         else setShiftedButton(shiftIsUp, R.id.del_clr_button)
 
         val buttonColor =
-            if (useRegisterLock) R.color.green_text_color
-            else R.color.white_text_color
+            if (useRegisterLock) green_text_color
+            else white_text_color
         for (button in useRegisterKeys)
-            findViewById<Button>(button)
-                .setTextColor(
-                        ContextCompat.getColorStateList(this, buttonColor))
+            findViewById<Button>(button).setTextColor(buttonColor)
     }
     @SuppressLint("SetTextI18n")
     private fun buttonClickHandler (button: Button, isLongClick:Boolean = false) {
@@ -325,11 +349,8 @@ class MainActivity : AppCompatActivity(){
             when (buttonText) {
                 "DEG" -> {
                     angleIsDegrees = false
-                    button.setTextColor(AppCompatResources
-                            .getColorStateList(this, R.color.red_text_color))
-                    button.setBackgroundColor(
-                            ContextCompat.getColor(
-                                    this, R.color.shift_down_bg))
+                    button.setTextColor(shift_down_bg)
+                    button.setBackgroundColor(shift_down_bg)
                     button.text = "RAD"
                     sharedPreferences.edit()
                             .putBoolean("angleIsDegrees", angleIsDegrees)
@@ -337,11 +358,8 @@ class MainActivity : AppCompatActivity(){
                 }
                 "RAD" -> {
                     angleIsDegrees = true
-                    button.setTextColor(ContextCompat.getColor(
-                            this, android.R.color.white))
-                    button.setBackgroundColor(
-                            ContextCompat.getColor(
-                                    this, R.color.operation_button))
+                    button.setTextColor(white_text_color)
+                    button.setBackgroundColor(operation_bg)
                     button.text = "DEG"
                     sharedPreferences.edit()
                             .putBoolean("angleIsDegrees", angleIsDegrees)

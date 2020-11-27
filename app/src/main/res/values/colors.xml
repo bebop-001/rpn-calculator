@@ -3,10 +3,11 @@
     <color name="colorPrimary">#272822</color>
     <color name="colorPrimaryDark">#272822</color>
     <color name="colorAccent">#272822</color>
-    <color name="bgCalc">#272822</color>
-    <color name="buttonBg">#434343</color>
-    <color name="operation_button">#636363</color>
+
+    <color name="number_bg">#434343</color>
+    <color name="operation_bg">#636363</color>
     <color name="shift_down_bg">#7E7D7D</color>
+
 
     <color name="red_text_default">#F4511E</color>
     <color name="white_text_default">@android:color/white</color>
