@@ -12,7 +12,7 @@
     <color name="red_text_default">#F4511E</color>
     <color name="white_text_default">@android:color/white</color>
     <color name="disabled_text_default">#AE9696</color>
-
     <color name="green_text_default">#7BFD35</color>
+    <color name="blue_text_default">#00ACC1</color>
 </resources>
 
