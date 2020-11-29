@@ -8,7 +8,6 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.media.AudioManager
 import android.os.Bundle
-import android.provider.Settings.Global.putInt
 import android.util.Log
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
@@ -16,7 +15,6 @@ import android.widget.*
 import android.widget.ScrollView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import com.kana_tutor.rpncalc.kanautils.*
 
@@ -100,19 +98,88 @@ class MainActivity : AppCompatActivity(){
 
          */
     }
-    private lateinit var del_clr_button : Button
-    private lateinit var exp_button     : Button
-    private lateinit var pi_button      : Button
-    private lateinit var reg_stk_button : Button
-    private lateinit var shift_button   : Button
+    private lateinit var chs_button      : Button
+    private lateinit var cosine_button   : Button
+    private lateinit var deg_rad_button  : Button
+    private lateinit var del_clr_button  : Button
+    private lateinit var div_button      : Button
+    private lateinit var exp_button      : Button
+    private lateinit var minus_button    : Button
+    private lateinit var mult_button     : Button
+    private lateinit var pi_button       : Button
+    private lateinit var plus_button     : Button
+    private lateinit var pow_button      : Button
+    private lateinit var reg_stk_button  : Button
+    private lateinit var shift_button    : Button
+    private lateinit var sine_button     : Button
+    private lateinit var tangent_button  : Button
 
-    private lateinit var panel_text_view: TextView
+    private lateinit var panel_text_view : TextView
 
-    private lateinit var panel_scroll : ScrollView
+    private lateinit var panel_scroll   : ScrollView
 
-    private lateinit var allButtons : ArrayList<ArrayList<Button>>
+    private lateinit var allButtons     : List<ArrayList<Button>>
+    private lateinit var numberButtons  : List<Button>
+    private lateinit var operatorButtons  : List<Button>
+    private lateinit var nonNumberButtons  : List<Button>
 
-    private enum class KbdState {shiftUp, shiftDown, shiftLock, register, stack}
+    private var rpnStack = RpnStack()
+    private var accumulator = ""
+
+    private interface KbdChanges {
+        var preCheck : (KbdState) -> Boolean
+        var postCheck : (KbdState) -> Boolean
+    }
+    private enum class KbdState : KbdChanges {
+        shiftUp {
+            override var preCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+            override var postCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+        },
+        shiftDown{
+            override var preCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+            override var postCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+        },
+        register{
+            override var preCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+            override var postCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+        },
+        stack{
+            override var preCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+            override var postCheck: (KbdState) -> Boolean =
+                fun (state:KbdState):Boolean {
+                    Log.d("KdbState:$state", "preCheck:Not implemented")
+                    return false
+                }
+        },
+    }
     private var kbdState = KbdState.shiftUp
 
     // get a list of lists of all buttons under the keyboard by
@@ -138,6 +205,7 @@ class MainActivity : AppCompatActivity(){
     lateinit var white_text_color      : ColorStateList
     lateinit var orange_text_color     : ColorStateList
     lateinit var green_text_color      : ColorStateList
+    lateinit var blue_text_color       : ColorStateList
 
     var shift_down_bg   = -1
     var number_bg       = -1
@@ -151,11 +219,22 @@ class MainActivity : AppCompatActivity(){
                 "user_prefs.txt", MODE_PRIVATE)
 
         panel_text_view = findViewById(R.id.panel_text_view)
-        del_clr_button = findViewById(R.id.del_clr_button)
-        exp_button     = findViewById(R.id.exp_button)
-        pi_button      = findViewById(R.id.pi_button)
-        reg_stk_button = findViewById(R.id.reg_stk_button)
-        shift_button   = findViewById(R.id.shift_button)
+
+        chs_button      = findViewById(R.id.chs_button)
+        cosine_button   = findViewById(R.id.cosine_button)
+        deg_rad_button  = findViewById(R.id.deg_rad_button)
+        del_clr_button  = findViewById(R.id.del_clr_button)
+        div_button      = findViewById(R.id.div_button)
+        exp_button      = findViewById(R.id.exp_button)
+        minus_button    = findViewById(R.id.minus_button)
+        mult_button     = findViewById(R.id.mult_button)
+        pi_button       = findViewById(R.id.pi_button)
+        plus_button     = findViewById(R.id.plus_button)
+        pow_button      = findViewById(R.id.pow_button)
+        reg_stk_button  = findViewById(R.id.reg_stk_button)
+        shift_button    = findViewById(R.id.shift_button)
+        sine_button     = findViewById(R.id.sine_button)
+        tangent_button  = findViewById(R.id.tangent_button)
 
         panel_scroll   = findViewById(R.id.panel_scroll)
 
@@ -178,6 +257,9 @@ class MainActivity : AppCompatActivity(){
 
         // get a list of all the buttons from the root view
         // then establish our on-click listeners.
+        val num = mutableListOf<Button>()
+        val notNum = mutableListOf<Button>()
+        val operators = mutableListOf<Button>()
         allButtons = getAllButtonViews()
         allButtons.flatten().forEach{ button->
             button.setOnLongClickListener{
@@ -190,9 +272,27 @@ class MainActivity : AppCompatActivity(){
             button.setOnClickListener{
                 buttonClickHandler(it as Button, false)
             }
+            if ("^[0-9]$".toRegex().matches(button.text.toString())) num.add(button)
+            else notNum.add(button)
+            if ("^[\\^+-×÷]$".toRegex().matches(button.text)) operators.add(button)
         }
+        numberButtons = num
+        nonNumberButtons = notNum
+        operatorButtons = operators
 
-
+        KbdState.shiftUp.preCheck = fun (kbdState:KbdState) : Boolean {
+            // if accumulator and stack are empty, disable all but number keys.
+            nonNumberButtons.forEach{
+                it.isEnabled = !(accumulator.isEmpty() && rpnStack.isEmpty())
+                Log.d("loop", "${it.text}:${it.isEnabled}")
+            }
+            if (accumulator.isNotEmpty())
+                del_clr_button.text = "DEL"
+            else if (rpnStack.isNotEmpty())
+                del_clr_button.text = "DROP"
+            return true
+        }
+        KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
     }
 
     override fun onResume() {
@@ -202,7 +302,7 @@ class MainActivity : AppCompatActivity(){
         // restore the keyboard state.
         kbdState = KbdState.values()[
                 sharedPreferences.getInt("kbdState", KbdState.shiftUp.ordinal)]
-        setShiftedButtons(kbdState)
+        kbdState.preCheck(kbdState)
         numberFormattingEnabled =
                 sharedPreferences.getBoolean("numberFormattingEnabled", true)
         RpnParser.setDigitsFormatting(
@@ -227,9 +327,6 @@ class MainActivity : AppCompatActivity(){
                 .putInt("kbdState", kbdState.ordinal)
                 .apply()
     }
-
-    private var rpnStack = RpnStack()
-    private var accumulator = ""
 
     // used to return result of context menu operation
     // set in onCreateContextMenu, used/cleared in onContextItemSelected
@@ -296,8 +393,6 @@ class MainActivity : AppCompatActivity(){
             R.id.cosine_button  to Pair("COS", "ACOS"),
             R.id.tangent_button to Pair("TAN", "ATAN"),
             R.id.shift_button   to Pair("⇳SHFT", "⇳SHFT"),
-            R.id.sto_rcl_button to Pair("STO", "RCL"),
-            R.id.del_clr_button to Pair("DEL", "CLR")
     )
 
     private fun setShiftedButton(state:KbdState, resId:Int) {
@@ -313,31 +408,8 @@ class MainActivity : AppCompatActivity(){
         button.setTextColor(textColor)
     }
     private fun setShiftedButtons(state:KbdState) {
+        kbdState = state
         buttonInfo.map{setShiftedButton(state, it.key)}
-    }
-    private val useRegisterKeys = arrayOf(R.id.pow_button, R.id.div_button,
-            R.id.mult_button, R.id.plus_button, R.id.minus_button,
-            R.id.reg_stk_button, R.id.del_clr_button, R.id.chs_button)
-    private var useRegisterLock = false
-    private fun toggleRegisterLock() {
-        useRegisterLock = !useRegisterLock
-        // enable/disable keys not used for the REG operator.
-        for (b in allButtons.flatten()) {
-            if (!useRegisterKeys.contains(b.id)) {
-                b.isEnabled = !useRegisterLock
-            }
-        }
-        // clear register in register mode.  clear/delete otherwise.
-        if (useRegisterLock) {
-            this.findViewById<Button>(R.id.del_clr_button).text = "CLR"
-        }
-        else setShiftedButton(kbdState, R.id.del_clr_button)
-
-        val buttonColor =
-            if (useRegisterLock) green_text_color
-            else white_text_color
-        for (button in useRegisterKeys)
-            findViewById<Button>(button).setTextColor(buttonColor)
     }
     @SuppressLint("SetTextI18n")
     private fun buttonClickHandler (button: Button, isLongClick:Boolean = false) {
@@ -353,10 +425,7 @@ class MainActivity : AppCompatActivity(){
 
         var buttonText = if (button.tag != null) button.tag.toString()
         else button.text.toString()
-        // If useRegisterLock is set and this isn't a math operation
-        // key (eg:+-^...) ignore it.
-        if (useRegisterLock && !useRegisterKeys.contains(button.id))
-            return
+        kbdState.preCheck(kbdState)
         try {
             when (buttonText) {
                 "DEG" -> {
@@ -378,9 +447,10 @@ class MainActivity : AppCompatActivity(){
                             .apply()
                 }
                 "⇳SHFT" -> {
-                    kbdState =  if (kbdState == KbdState.shiftUp) KbdState.shiftDown
-                                else KbdState.shiftUp
-                    setShiftedButtons(kbdState)
+                    setShiftedButtons(
+                        if (kbdState == KbdState.shiftUp) KbdState.shiftDown
+                        else KbdState.shiftUp
+                    )
                 }
                 "PI", "π" -> {
                     if (accumulator.isNotEmpty()) {
@@ -391,12 +461,10 @@ class MainActivity : AppCompatActivity(){
                     panelTextAppend(buttonText)
                 }
                 "STK" -> {
-                    getStackOperation(button) { result ->
-                        calculate(result)
-                    }
+                    setShiftedButtons(KbdState.stack)
                 }
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
-                    if (buttonText == "E") {
+                    if (buttonText == "EXP") {
                         // unless the accumulator contains 1 or more digits
                         // and doesn't already contain an "E", ignore it.
                         if (!accumulator.contains("\\d+".toRegex())
@@ -408,7 +476,7 @@ class MainActivity : AppCompatActivity(){
                 }
                 // registers
                 "REG" -> {
-                    toggleRegisterLock()
+                    setShiftedButtons(KbdState.stack)
                 }
                 // change sign
                 "CHS" -> {
@@ -427,21 +495,20 @@ class MainActivity : AppCompatActivity(){
                         }
                     else calculate(buttonText)
                 }
-                "+", "-", "×", "÷", "^",
-                "SWAP", "DROP", "DUP",
-                "ENTR", "STO", "RCL" -> {
-                        calculate(buttonText)
+                "+", "-", "×", "÷", "^", "SWAP", "DUP", "ENTR", "STO", "RCL" -> {
+                    calculate(buttonText)
                 }
-                "DEL" -> {
-                    if (accumulator.isNotEmpty()) {
-                        accumulator =   if (isLongClick) ""
-                                        else accumulator.dropLast(1)
-                        if (accumulator.isEmpty()) {
-                            button.text = "DROP"
-                            button.isEnabled = rpnStack.isNotEmpty()
-                        }
+                "DROP" -> {
+                    if (isLongClick) {
+                        rpnStack.clear()
                         updateDisplay()
                     }
+                    else calculate("DROP")
+                }
+                "DEL" -> {
+                        accumulator =   if (isLongClick) ""
+                                        else accumulator.dropLast(1)
+                        updateDisplay()
                 }
                 "CLR" -> {
                     calculate("\nREG\nCLR\n")
@@ -450,24 +517,13 @@ class MainActivity : AppCompatActivity(){
                     val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
                     calculate("$angleUnits\n$buttonText")
                 }
-                else                                                       -> Log.d("btnOnClick", "$buttonText ignored")
+                else -> Log.d("btnOnClick", "$buttonText ignored")
             }
-            // if this a shifted key and shift is down and shift lock is off,
-            // turn shift off.
-            if (buttonInfo.containsKey(button.id)
-                    && kbdState == KbdState.shiftDown
-                    && button.id != R.id.shift_button) {
-                kbdState = KbdState.shiftUp
-                setShiftedButtons(kbdState)
-            }
-            if (useRegisterLock && useRegisterKeys.contains(button.id) && button.id != R.id.reg_stk_button) {
-                toggleRegisterLock()
-            }
-
         }
         catch (e: Exception) {
             Toast.makeText(this, "Error: $e", Toast.LENGTH_LONG).show()
         }
+        kbdState.postCheck(kbdState)
     }
 
     // Default menu.  Unless a class implements its own onCreateOptionsMenu
