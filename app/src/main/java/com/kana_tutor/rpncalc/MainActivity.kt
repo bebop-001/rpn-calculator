@@ -296,9 +296,9 @@ class MainActivity : AppCompatActivity(){
                 del_clr_button.text = "DEL"
             else if (rpnStack.isNotEmpty())
                 del_clr_button.text = "DROP"
-            for (y in allButtons.indices) {
-                for(x in allButtons[y].indices) {
-                    Log.d("allButtons", "$y:$x:${allButtons[x][y].text}")
+            for (x in allButtons.indices) {
+                for(y in allButtons[x].indices) {
+                    Log.d("allButtons", "$x:$y:${allButtons[x][y].text}")
                 }
             }
             return true
