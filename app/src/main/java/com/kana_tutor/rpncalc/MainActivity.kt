@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.ColorStateList
-import android.graphics.Color
 import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
@@ -16,11 +15,43 @@ import android.widget.*
 import android.widget.ScrollView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import com.kana_tutor.rpncalc.kanautils.*
 
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
 
+private val blue_text_default       = 0xff00acc1.toInt()
+private val disabled_text_default   = 0xffae9696.toInt()
+private val green_text_default      = 0xff7bfd35.toInt()
+private val orange_text_default     = 0xffffbb33.toInt()
+private val red_text_default        = 0xfff4511e.toInt()
+private val white_text_default      = 0xffffffff.toInt()
+private val number_bg               = 0xff434343.toInt()
+private val operation_bg            = 0xff636363.toInt()
+private val shift_down_bg           = 0xfF7e7d7d.toInt()
+
+private val stateEnableDisable = arrayOf(
+        intArrayOf(android.R.attr.state_enabled),  // Enabled
+        intArrayOf(-android.R.attr.state_enabled)  // Disabled
+)
+private val red_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(red_text_default, disabled_text_default)
+)
+private val white_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(white_text_default, disabled_text_default)
+)
+private val orange_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(orange_text_default, disabled_text_default)
+)
+private val green_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(green_text_default, disabled_text_default)
+)
+private val blue_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(blue_text_default, disabled_text_default)
+)
+enum class RpnColor(val color:ColorStateList) {
+    white(white_text_color), red(red_text_color),
+    green(green_text_color), blue(blue_text_color)
+}
 
 class MainActivity : AppCompatActivity(){
     companion object {
@@ -99,6 +130,8 @@ class MainActivity : AppCompatActivity(){
 
          */
     }
+
+    // ARGV colors.
     private lateinit var chs_button      : Button
     private lateinit var cosine_button   : Button
     private lateinit var deg_rad_button  : Button
@@ -129,11 +162,9 @@ class MainActivity : AppCompatActivity(){
 
     private data class RpnButton(
         val text:String,
-            val rpnToken : String = "",
-        val textColor : ColorStateList
-    ) {
-
-    }
+        val textColor : RpnColor = RpnColor.white,
+        val rpnToken : String = text,
+    )
     private interface KbdChanges {
         var preCheck : (KbdState) -> Boolean
         var postCheck : (KbdState) -> Boolean
@@ -234,36 +265,6 @@ class MainActivity : AppCompatActivity(){
         return rr
     }
 
-    // ARGV colors.
-    private val blue_text_default       = 0xff00acc1.toInt()
-    private val disabled_text_default   = 0xffae9696.toInt()
-    private val green_text_default      = 0xff7bfd35.toInt()
-    private val orange_text_default     = 0xffffbb33.toInt()
-    private val red_text_default        = 0xfff4511e.toInt()
-    private val white_text_default      = 0xffffffff.toInt()
-    private val number_bg               = 0xff434343.toInt()
-    private val operation_bg            = 0xff636363.toInt()
-    private val shift_down_bg           = 0xfF7e7d7d.toInt()
-
-    private val stateEnableDisable = arrayOf(
-            intArrayOf(android.R.attr.state_enabled),  // Enabled
-            intArrayOf(-android.R.attr.state_enabled)  // Disabled
-    )
-    private val red_text_color = ColorStateList(stateEnableDisable,
-        intArrayOf(red_text_default, disabled_text_default)
-    )
-    private val white_text_color = ColorStateList(stateEnableDisable,
-        intArrayOf(white_text_default, disabled_text_default)
-    )
-    private val orange_text_color = ColorStateList(stateEnableDisable,
-        intArrayOf(orange_text_default, disabled_text_default)
-    )
-    private val green_text_color = ColorStateList(stateEnableDisable,
-        intArrayOf(green_text_default, disabled_text_default)
-    )
-    private val blue_text_color = ColorStateList(stateEnableDisable,
-        intArrayOf(blue_text_default, disabled_text_default)
-    )
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -415,23 +416,18 @@ class MainActivity : AppCompatActivity(){
     }
 
     private val buttonInfo = hashMapOf(
-            R.id.sine_button    to Pair("SIN", "ASIN"),
-            R.id.cosine_button  to Pair("COS", "ACOS"),
-            R.id.tangent_button to Pair("TAN", "ATAN"),
-            R.id.shift_button   to Pair("⇳SHFT", "⇳SHFT"),
+            R.id.sine_button    to Pair(RpnButton("SIN"), RpnButton("ASIN", RpnColor.red)),
+            R.id.cosine_button  to Pair(RpnButton("COS"), RpnButton("ACOS", RpnColor.red)),
+            R.id.tangent_button to Pair(RpnButton("TAN"), RpnButton("ATAN", RpnColor.red)),
+            R.id.shift_button   to Pair(RpnButton("⇳SHFT"), RpnButton("⇳SHFT", RpnColor.red)),
     )
 
     private fun setShiftedButton(state:KbdState, resId:Int) {
         val button = findViewById<Button>(resId)!!
-        val textColor = when (state) {
-            KbdState.shiftUp -> white_text_color
-            KbdState.shiftDown -> red_text_color
-            KbdState.register -> green_text_color
-            else -> white_text_color
-        }
         val (buttonUp, buttonDown) = buttonInfo[resId]!!
-        button.text = if(state == KbdState.shiftUp) buttonUp else buttonDown
-        button.setTextColor(textColor)
+        val b = if(state == KbdState.shiftUp) buttonUp else buttonDown
+        button.text = b.text
+        button.setTextColor(b.textColor.color)
     }
     private fun setShiftedButtons(state:KbdState) {
         kbdState = state
