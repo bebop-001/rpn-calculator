@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity(){
 
     private lateinit var panel_scroll   : ScrollView
 
-    private lateinit var allButtons     : List<ArrayList<Button>>
+    private lateinit var allButtons     : List<List<Button>>
     private lateinit var numberButtons  : List<Button>
     private lateinit var operatorButtons  : List<Button>
     private lateinit var nonNumberButtons  : List<Button>
@@ -194,8 +194,14 @@ class MainActivity : AppCompatActivity(){
                 if (v is ViewGroup) getViewChildren(v)
                 else l.add(v as Button)
             }
-            if (l.size > 0)
-                rr.add(l)
+            // index column by row.
+            for(y in l.indices) {
+                if (y > rr.lastIndex)
+                    rr.add(arrayListOf())
+                rr[y].add(l[y])
+            }
+            // if (l.size > 0)
+                // rr.add(l)
         }
         getViewChildren(findViewById<LinearLayout>(R.id.keyboard_root))
         return rr
@@ -290,6 +296,11 @@ class MainActivity : AppCompatActivity(){
                 del_clr_button.text = "DEL"
             else if (rpnStack.isNotEmpty())
                 del_clr_button.text = "DROP"
+            for (y in allButtons.indices) {
+                for(x in allButtons[y].indices) {
+                    Log.d("allButtons", "$y:$x:${allButtons[x][y].text}")
+                }
+            }
             return true
         }
         KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
@@ -425,103 +436,99 @@ class MainActivity : AppCompatActivity(){
 
         var buttonText = if (button.tag != null) button.tag.toString()
         else button.text.toString()
+        Log.d("kbdState", "$kbdState")
         kbdState.preCheck(kbdState)
-        try {
-            when (buttonText) {
-                "DEG" -> {
-                    angleIsDegrees = false
-                    button.setTextColor(shift_down_bg)
-                    button.setBackgroundColor(shift_down_bg)
-                    button.text = "RAD"
-                    sharedPreferences.edit()
-                            .putBoolean("angleIsDegrees", angleIsDegrees)
-                            .apply()
-                }
-                "RAD" -> {
-                    angleIsDegrees = true
-                    button.setTextColor(white_text_color)
-                    button.setBackgroundColor(operation_bg)
-                    button.text = "DEG"
-                    sharedPreferences.edit()
-                            .putBoolean("angleIsDegrees", angleIsDegrees)
-                            .apply()
-                }
-                "⇳SHFT" -> {
-                    setShiftedButtons(
-                        if (kbdState == KbdState.shiftUp) KbdState.shiftDown
-                        else KbdState.shiftUp
-                    )
-                }
-                "PI", "π" -> {
-                    if (accumulator.isNotEmpty()) {
-                        rpnStack.push(RpnToken(accumulator))
-                        accumulator = ""
-                    }
-                    rpnStack.push(RpnToken(buttonText))
-                    panelTextAppend(buttonText)
-                }
-                "STK" -> {
-                    setShiftedButtons(KbdState.stack)
-                }
-                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
-                    if (buttonText == "EXP") {
-                        // unless the accumulator contains 1 or more digits
-                        // and doesn't already contain an "E", ignore it.
-                        if (!accumulator.contains("\\d+".toRegex())
-                                || accumulator.contains("E"))
-                            buttonText = ""
-                    }
-                    panelTextAppend(buttonText)
-                    accumulator += buttonText
-                }
-                // registers
-                "REG" -> {
-                    setShiftedButtons(KbdState.stack)
-                }
-                // change sign
-                "CHS" -> {
-                    if (accumulator.isNotEmpty())
-                        try {
-                            // we get an exception if this isn't a valid number.
-                            accumulator.toDouble()
-                            accumulator =   if (accumulator.startsWith("-"))
-                                                accumulator.removePrefix("-")
-                                            else "-$accumulator"
-                            updateDisplay()
-                        }
-                        catch (e:java.lang.Exception) {
-                            // ignore.  We used toDouble to test for accumulator
-                            // being a number.
-                        }
-                    else calculate(buttonText)
-                }
-                "+", "-", "×", "÷", "^", "SWAP", "DUP", "ENTR", "STO", "RCL" -> {
-                    calculate(buttonText)
-                }
-                "DROP" -> {
-                    if (isLongClick) {
-                        rpnStack.clear()
-                        updateDisplay()
-                    }
-                    else calculate("DROP")
-                }
-                "DEL" -> {
-                        accumulator =   if (isLongClick) ""
-                                        else accumulator.dropLast(1)
-                        updateDisplay()
-                }
-                "CLR" -> {
-                    calculate("\nREG\nCLR\n")
-                }
-                "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
-                    val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
-                    calculate("$angleUnits\n$buttonText")
-                }
-                else -> Log.d("btnOnClick", "$buttonText ignored")
+        when (buttonText) {
+            "DEG" -> {
+                angleIsDegrees = false
+                button.setTextColor(shift_down_bg)
+                button.setBackgroundColor(shift_down_bg)
+                button.text = "RAD"
+                sharedPreferences.edit()
+                        .putBoolean("angleIsDegrees", angleIsDegrees)
+                        .apply()
             }
-        }
-        catch (e: Exception) {
-            Toast.makeText(this, "Error: $e", Toast.LENGTH_LONG).show()
+            "RAD" -> {
+                angleIsDegrees = true
+                button.setTextColor(white_text_color)
+                button.setBackgroundColor(operation_bg)
+                button.text = "DEG"
+                sharedPreferences.edit()
+                        .putBoolean("angleIsDegrees", angleIsDegrees)
+                        .apply()
+            }
+            "⇳SHFT" -> {
+                setShiftedButtons(
+                    if (kbdState == KbdState.shiftUp) KbdState.shiftDown
+                    else KbdState.shiftUp
+                )
+            }
+            "PI", "π" -> {
+                if (accumulator.isNotEmpty()) {
+                    rpnStack.push(RpnToken(accumulator))
+                    accumulator = ""
+                }
+                rpnStack.push(RpnToken(buttonText))
+                panelTextAppend(buttonText)
+            }
+            "STK" -> {
+                setShiftedButtons(KbdState.stack)
+            }
+            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
+                if (buttonText == "EXP") {
+                    // unless the accumulator contains 1 or more digits
+                    // and doesn't already contain an "E", ignore it.
+                    if (!accumulator.contains("\\d+".toRegex())
+                            || accumulator.contains("E"))
+                        buttonText = ""
+                }
+                panelTextAppend(buttonText)
+                accumulator += buttonText
+            }
+            // registers
+            "REG" -> {
+                setShiftedButtons(KbdState.stack)
+            }
+            // change sign
+            "CHS" -> {
+                if (accumulator.isNotEmpty())
+                    try {
+                        // we get an exception if this isn't a valid number.
+                        accumulator.toDouble()
+                        accumulator =   if (accumulator.startsWith("-"))
+                                            accumulator.removePrefix("-")
+                                        else "-$accumulator"
+                        updateDisplay()
+                    }
+                    catch (e:java.lang.Exception) {
+                        // ignore.  We used toDouble to test for accumulator
+                        // being a number.
+                    }
+                else calculate(buttonText)
+            }
+            "+", "-", "×", "÷", "^", "SWAP", "DUP", "ENTR", "STO", "RCL" -> {
+                calculate(buttonText)
+            }
+            "DROP" -> {
+                if (isLongClick) {
+                    rpnStack.clear()
+                    updateDisplay()
+                }
+                else calculate("DROP")
+            }
+            "DEL" -> {
+                    accumulator =   if (isLongClick) ""
+                                    else accumulator.dropLast(1)
+                    updateDisplay()
+            }
+            "CLR" -> {
+                calculate("\nREG\nCLR\n")
+            }
+            "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
+                val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
+                calculate("$angleUnits\n$buttonText")
+            }
+            else -> Log.d("btnOnClick", "$buttonText ignored")
         }
         kbdState.postCheck(kbdState)
     }
