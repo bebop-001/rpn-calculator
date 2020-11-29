@@ -44,6 +44,7 @@
 
             <Button
                 android:id="@+id/exp_button"
+                android:tag="E"
                 style="@style/operation_button"
                 android:text="EXP"
                 android:textColor="@color/orange_text_color" />
