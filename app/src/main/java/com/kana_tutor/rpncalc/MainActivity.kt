@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.ColorStateList
+import android.graphics.Color
 import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
@@ -126,6 +127,13 @@ class MainActivity : AppCompatActivity(){
     private var rpnStack = RpnStack()
     private var accumulator = ""
 
+    private data class RpnButton(
+        val text:String,
+            val rpnToken : String = "",
+        val textColor : ColorStateList
+    ) {
+
+    }
     private interface KbdChanges {
         var preCheck : (KbdState) -> Boolean
         var postCheck : (KbdState) -> Boolean
@@ -181,6 +189,25 @@ class MainActivity : AppCompatActivity(){
         },
     }
     private var kbdState = KbdState.shiftUp
+    private fun kdbStateInitialize() {
+        KbdState.shiftUp.preCheck = fun (kbdState:KbdState) : Boolean {
+            // if accumulator and stack are empty, disable all but number keys.
+            nonNumberButtons.forEach{
+                it.isEnabled = !(accumulator.isEmpty() && rpnStack.isEmpty())
+                Log.d("loop", "${it.text}:${it.isEnabled}")
+            }
+            if (accumulator.isNotEmpty())
+                del_clr_button.text = "DEL"
+            else if (rpnStack.isNotEmpty())
+                del_clr_button.text = "DROP"
+            for (x in allButtons.indices) {
+                for(y in allButtons[x].indices) {
+                    Log.d("allButtons", "$x:$y:${allButtons[x][y].text}")
+                }
+            }
+            return true
+        }
+    }
 
     // get a list of lists of all buttons under the keyboard by
     // row x column. 0,0 is top left, rr[lastIndex][lastIndex]
@@ -207,15 +234,36 @@ class MainActivity : AppCompatActivity(){
         return rr
     }
 
-    lateinit var red_text_color        : ColorStateList
-    lateinit var white_text_color      : ColorStateList
-    lateinit var orange_text_color     : ColorStateList
-    lateinit var green_text_color      : ColorStateList
-    lateinit var blue_text_color       : ColorStateList
+    // ARGV colors.
+    private val blue_text_default       = 0xff00acc1.toInt()
+    private val disabled_text_default   = 0xffae9696.toInt()
+    private val green_text_default      = 0xff7bfd35.toInt()
+    private val orange_text_default     = 0xffffbb33.toInt()
+    private val red_text_default        = 0xfff4511e.toInt()
+    private val white_text_default      = 0xffffffff.toInt()
+    private val number_bg               = 0xff434343.toInt()
+    private val operation_bg            = 0xff636363.toInt()
+    private val shift_down_bg           = 0xfF7e7d7d.toInt()
 
-    var shift_down_bg   = -1
-    var number_bg       = -1
-    var operation_bg    = -1
+    private val stateEnableDisable = arrayOf(
+            intArrayOf(android.R.attr.state_enabled),  // Enabled
+            intArrayOf(-android.R.attr.state_enabled)  // Disabled
+    )
+    private val red_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(red_text_default, disabled_text_default)
+    )
+    private val white_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(white_text_default, disabled_text_default)
+    )
+    private val orange_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(orange_text_default, disabled_text_default)
+    )
+    private val green_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(green_text_default, disabled_text_default)
+    )
+    private val blue_text_color = ColorStateList(stateEnableDisable,
+        intArrayOf(blue_text_default, disabled_text_default)
+    )
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -244,23 +292,6 @@ class MainActivity : AppCompatActivity(){
 
         panel_scroll   = findViewById(R.id.panel_scroll)
 
-        red_text_color = ContextCompat.getColorStateList(
-                applicationContext, R.color.red_text_color)!!
-        white_text_color = ContextCompat.getColorStateList(
-                applicationContext, R.color.white_text_color)!!
-        orange_text_color = ContextCompat.getColorStateList(
-                applicationContext, R.color.orange_text_color)!!
-        green_text_color = ContextCompat.getColorStateList(
-                applicationContext, R.color.green_text_color)!!
-
-        shift_down_bg = ContextCompat.getColor(
-                applicationContext, R.color.shift_down_bg)
-        number_bg = ContextCompat.getColor(
-                applicationContext, R.color.number_bg)
-        operation_bg = ContextCompat.getColor(
-                applicationContext, R.color.operation_bg)
-
-
         // get a list of all the buttons from the root view
         // then establish our on-click listeners.
         val num = mutableListOf<Button>()
@@ -286,23 +317,7 @@ class MainActivity : AppCompatActivity(){
         nonNumberButtons = notNum
         operatorButtons = operators
 
-        KbdState.shiftUp.preCheck = fun (kbdState:KbdState) : Boolean {
-            // if accumulator and stack are empty, disable all but number keys.
-            nonNumberButtons.forEach{
-                it.isEnabled = !(accumulator.isEmpty() && rpnStack.isEmpty())
-                Log.d("loop", "${it.text}:${it.isEnabled}")
-            }
-            if (accumulator.isNotEmpty())
-                del_clr_button.text = "DEL"
-            else if (rpnStack.isNotEmpty())
-                del_clr_button.text = "DROP"
-            for (y in allButtons.indices) {
-                for(x in allButtons[y].indices) {
-                    Log.d("allButtons", "$y:$x:${allButtons[x][y].text}")
-                }
-            }
-            return true
-        }
+        kdbStateInitialize()
         KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
     }
 
