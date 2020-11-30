@@ -132,41 +132,47 @@ class MainActivity : AppCompatActivity(){
          */
     }
 
-    // ARGV colors.
-    private lateinit var chs_button      : Button
-    private lateinit var cosine_button   : Button
-    private lateinit var deg_rad_button  : Button
-    private lateinit var del_clr_button  : Button
-    private lateinit var div_button      : Button
-    private lateinit var exp_button      : Button
-    private lateinit var minus_button    : Button
-    private lateinit var mult_button     : Button
-    private lateinit var pi_button       : Button
-    private lateinit var plus_button     : Button
-    private lateinit var pow_button      : Button
-    private lateinit var reg_stk_button  : Button
-    private lateinit var shift_button    : Button
-    private lateinit var sine_button     : Button
-    private lateinit var tangent_button  : Button
-
     private lateinit var panel_text_view : TextView
 
     private lateinit var panel_scroll   : ScrollView
 
     private lateinit var buttonMap     : Map<Int, Button>
     private lateinit var numberButtons  : List<Button>
-    private lateinit var operatorButtons  : List<Button>
     private lateinit var nonNumberButtons  : List<Button>
 
     private var rpnStack = RpnStack()
     private var accumulator = ""
 
     private data class RpnButton(
+        val buttonKey : Int,
         val text:String,
-        val textColor : RpnColor = RpnColor.white,
         val rpnToken : String = text,
-        val textSize : Int = 18
     )
+    private class RpnButtons {
+        val buttons = mutableListOf<RpnButton>()
+        val textSize : Int
+        val textColor : ColorStateList
+        constructor(
+            buttonKey:Int,
+            text:String,
+            token:String = text,
+            textColor:ColorStateList = white_text_color,
+            textSize: Int = 18,)
+        {
+            this.buttons.add(RpnButton(buttonKey, text, token))
+            this.textColor = textColor
+            this.textSize = textSize
+        }
+        constructor(
+            buttons:List<RpnButton>,
+            textColor:ColorStateList = white_text_color,
+            textSize: Int = 18,)
+        {
+            this.buttons.addAll(buttons)
+            this.textColor = textColor
+            this.textSize = textSize
+        }
+    }
     private interface KbdChanges {
         var preCheck : (KbdState) -> Boolean
         var postCheck : (KbdState) -> Boolean
@@ -224,6 +230,7 @@ class MainActivity : AppCompatActivity(){
     private var kbdState = KbdState.shiftUp
     private fun kdbStateInitialize() {
         KbdState.shiftUp.preCheck = fun (kbdState:KbdState) : Boolean {
+            val del_clr_button = buttonMap[300]!!
             // if accumulator and stack are empty, disable all but number keys.
             nonNumberButtons.forEach{
                 it.isEnabled = !(accumulator.isEmpty() && rpnStack.isEmpty())
@@ -273,23 +280,6 @@ class MainActivity : AppCompatActivity(){
                 "user_prefs.txt", MODE_PRIVATE)
 
         panel_text_view = findViewById(R.id.panel_text_view)
-
-        chs_button      = findViewById(R.id.chs_button)
-        cosine_button   = findViewById(R.id.cosine_button)
-        deg_rad_button  = findViewById(R.id.deg_rad_button)
-        del_clr_button  = findViewById(R.id.del_clr_button)
-        div_button      = findViewById(R.id.div_button)
-        exp_button      = findViewById(R.id.exp_button)
-        minus_button    = findViewById(R.id.minus_button)
-        mult_button     = findViewById(R.id.mult_button)
-        pi_button       = findViewById(R.id.pi_button)
-        plus_button     = findViewById(R.id.plus_button)
-        pow_button      = findViewById(R.id.pow_button)
-        reg_stk_button  = findViewById(R.id.reg_stk_button)
-        shift_button    = findViewById(R.id.shift_button)
-        sine_button     = findViewById(R.id.sine_button)
-        tangent_button  = findViewById(R.id.tangent_button)
-
         panel_scroll   = findViewById(R.id.panel_scroll)
 
         // get a list of all the buttons from the root view
@@ -316,7 +306,6 @@ class MainActivity : AppCompatActivity(){
         }
         numberButtons = num
         nonNumberButtons = notNum
-        operatorButtons = operators
 
         kdbStateInitialize()
         KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
@@ -415,59 +404,64 @@ class MainActivity : AppCompatActivity(){
         updateDisplay()
     }
 
+    private val trigButtons = listOf(
+        RpnButton(101, "SIN"), RpnButton(102, "COS"),
+        RpnButton(103, "TAN"),
+    )
+    private val arcTrigButtons = listOf(
+        RpnButton(101, "ASIN"), RpnButton(102, "ACOS"),
+        RpnButton(103, "ATAN"),
+    )
+    private val operatorButtons = listOf(
+        RpnButton(4, "^"), RpnButton(104, "÷"),
+        RpnButton(204, "×"), RpnButton(304, "-"),
+        RpnButton(404, "+"),
+    )
+    private val registerButtons = listOf(
+        RpnButton(0, "REG"), RpnButton(1, "STO"),
+        RpnButton(2, "RCL"), RpnButton(3, "CLR"),
+    )
+    private val stackButtons = listOf(
+        RpnButton(0, "STK"), RpnButton(1, "DUP"),
+        RpnButton(2, "SWP"), RpnButton(3, "DROP"),
+        RpnButton(4, "CLR"),
+    )
+
     private fun setKeyboardState(newState:KbdState) {
-        val shiftUp = hashMapOf(
-            0 to RpnButton("REG"),
-            101 to RpnButton("SIN"),
-            102 to RpnButton("COS"),
-            103 to RpnButton("TAN"),
-            500 to RpnButton("⇳SHFT"),
+        val shiftUp = listOf(
+            RpnButtons(0, "REG"),
+            RpnButtons(trigButtons),
+            RpnButtons(500,"⇳SHFT"),
         )
-        val shiftDown = hashMapOf<Int,RpnButton>(
-            0 to RpnButton("STK", RpnColor.red),
-            101 to RpnButton("ASIN", RpnColor.red),
-            102 to RpnButton("ACOS", RpnColor.red),
-            103 to RpnButton("ATAN", RpnColor.red),
-            500 to RpnButton("⇳SHFT", RpnColor.red),
+        val shiftDown = listOf(
+            RpnButtons(0, "STK", textColor = red_text_color),
+            RpnButtons(arcTrigButtons, textColor = red_text_color),
+            RpnButtons(500, "⇳SHFT", textColor = red_text_color),
         )
-        val regUp = hashMapOf(
-            0 to RpnButton("REG"),
-            1 to RpnButton("EXP", RpnColor.orange),
-            2 to RpnButton("π", RpnColor.orange),
-            3 to RpnButton("DEL"),
-            4 to RpnButton("^", textSize = 26),
-            104 to RpnButton("÷", textSize = 26),
-            204 to RpnButton("×", textSize = 26),
-            304 to RpnButton("-", textSize = 26),
-            404 to RpnButton("+", textSize = 26),
+        val regUp = listOf(
+            RpnButtons(0, "REG"),
+            RpnButtons(1, "EXP", textColor = orange_text_color),
+            RpnButtons(2,"π", textColor = orange_text_color),
+            RpnButtons(3, "DEL"),
+            RpnButtons(operatorButtons, textSize = 26),
         )
-        val regDown = hashMapOf(
-            0 to RpnButton("REG", RpnColor.green),
-            1 to RpnButton("STO", RpnColor.green),
-            2 to RpnButton("RCL", RpnColor.green),
-            3 to RpnButton("CLR", RpnColor.green),
-            4 to RpnButton("^", RpnColor.green, textSize = 26),
-            104 to RpnButton("÷", RpnColor.green, textSize = 26),
-            204 to RpnButton("×", RpnColor.green, textSize = 26),
-            304 to RpnButton("-", RpnColor.green, textSize = 26),
-            404 to RpnButton("+", RpnColor.green, textSize = 26),
+        val regDown = listOf(
+            RpnButtons(registerButtons, textColor = green_text_color),
+            RpnButtons(operatorButtons, textColor = green_text_color,
+                textSize = 26),
         )
-        val stackUp = hashMapOf(
-            0 to RpnButton("STK", RpnColor.red),
-            1 to RpnButton("EXP", RpnColor.orange),
-            2 to RpnButton("π", RpnColor.orange),
-            3 to RpnButton("DEL"),
-            4 to RpnButton("^", textSize = 26),
+        val stackUp = listOf(
+            RpnButtons(0, "STK", textColor = red_text_color),
+            RpnButtons(1, "EXP", textColor = orange_text_color),
+            RpnButtons(2, "π", textColor = orange_text_color),
+            RpnButtons(3, "DEL"),
+            RpnButtons(4, "^", textSize = 26),
         )
-        val stackDown = hashMapOf(
-            0 to RpnButton("STK", RpnColor.blue),
-            1 to RpnButton("DUP", RpnColor.blue),
-            2 to RpnButton("SWP", RpnColor.blue),
-            3 to RpnButton("DROP", RpnColor.blue),
-            4 to RpnButton("CLR", RpnColor.blue),
+        val stackDown = listOf(
+            RpnButtons(stackButtons, textColor = blue_text_color),
         )
 
-        val stateMap = hashMapOf<Pair<KbdState,KbdState>,Map<Int,RpnButton>>(
+        val stateMap = hashMapOf<Pair<KbdState,KbdState>,List<RpnButtons>>(
             Pair(KbdState.shiftUp,KbdState.shiftDown) to shiftDown,
             Pair(KbdState.shiftDown,KbdState.shiftUp) to shiftUp,
 
@@ -480,12 +474,13 @@ class MainActivity : AppCompatActivity(){
 
         val buttonInfo = stateMap[Pair(kbdState, newState)]
         kbdState = newState
-        for (id in buttonInfo!!.keys) {
-            val button = buttonMap[id]!!
-            val rpnButton = buttonInfo[id]!!
-            button.text = rpnButton.text
-            button.setTextColor(rpnButton.textColor.color)
-            button.textSize = rpnButton.textSize.toFloat()
+        for (rpnButtons in buttonInfo!!) {
+            for (rpnButton in rpnButtons.buttons) {
+                val button = buttonMap[rpnButton.buttonKey]!!
+                button.text = rpnButton.text
+                button.setTextColor(rpnButtons.textColor)
+                button.textSize = rpnButtons.textSize.toFloat()
+            }
         }
     }
     @SuppressLint("SetTextI18n")
