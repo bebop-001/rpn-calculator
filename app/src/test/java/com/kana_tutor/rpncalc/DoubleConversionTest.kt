@@ -1,5 +1,5 @@
 import com.google.gson.Gson
-import com.kana_tutor.rpncalc.kanautils.longBitStringToDouble
+import com.kana_tutor.rpncalc.kanautils.longBitsToDoubleOrNull
 import com.kana_tutor.rpncalc.kanautils.toLongBitsString
 import kotlin.random.Random.Default.nextDouble
 
@@ -28,8 +28,8 @@ fun main(args: Array<String>) {
     println("$double, $longBits, $longBitsS, $d1, ${double - d1}")
     val double2 = 1/3.0
     val s1 = double2.toLongBitsString()
-    println("$double2, $s1, ${s1.longBitStringToDouble() - double2}")
-    println("Empty string:${"".longBitStringToDouble()}")
+    println("$double2, $s1, ${s1.longBitsToDoubleOrNull()?.minus(double2)}")
+    println("Empty string:${"".longBitsToDoubleOrNull()}")
     println("Nan:${(1/0.0).toLongBitsString()}")
 
     val hash = mutableMapOf<Int, Double>()
