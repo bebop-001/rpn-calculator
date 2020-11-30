@@ -50,7 +50,8 @@ private val blue_text_color = ColorStateList(stateEnableDisable,
 )
 enum class RpnColor(val color:ColorStateList) {
     white(white_text_color), red(red_text_color),
-    green(green_text_color), blue(blue_text_color)
+    green(green_text_color), blue(blue_text_color),
+    orange(orange_text_color)
 }
 
 class MainActivity : AppCompatActivity(){
@@ -164,6 +165,7 @@ class MainActivity : AppCompatActivity(){
         val text:String,
         val textColor : RpnColor = RpnColor.white,
         val rpnToken : String = text,
+        val textSize : Int = 18
     )
     private interface KbdChanges {
         var preCheck : (KbdState) -> Boolean
@@ -415,23 +417,79 @@ class MainActivity : AppCompatActivity(){
         updateDisplay()
     }
 
-    private val buttonInfo = hashMapOf(
-            R.id.sine_button    to Pair(RpnButton("SIN"), RpnButton("ASIN", RpnColor.red)),
-            R.id.cosine_button  to Pair(RpnButton("COS"), RpnButton("ACOS", RpnColor.red)),
-            R.id.tangent_button to Pair(RpnButton("TAN"), RpnButton("ATAN", RpnColor.red)),
-            R.id.shift_button   to Pair(RpnButton("⇳SHFT"), RpnButton("⇳SHFT", RpnColor.red)),
-    )
+    private fun setKeyboardState(newState:KbdState) {
+        val shiftUp = hashMapOf(
+            0 to RpnButton("REG"),
+            101 to RpnButton("SIN"),
+            102 to RpnButton("COS"),
+            103 to RpnButton("TAN"),
+            500 to RpnButton("⇳SHFT"),
+        )
+        val shiftDown = hashMapOf<Int,RpnButton>(
+            0 to RpnButton("STK", RpnColor.red),
+            101 to RpnButton("ASIN", RpnColor.red),
+            102 to RpnButton("ACOS", RpnColor.red),
+            103 to RpnButton("ATAN", RpnColor.red),
+            500 to RpnButton("⇳SHFT", RpnColor.red),
+        )
+        val regUp = hashMapOf(
+            0 to RpnButton("REG"),
+            1 to RpnButton("EXP", RpnColor.orange),
+            2 to RpnButton("π", RpnColor.orange),
+            3 to RpnButton("DEL"),
+            4 to RpnButton("^", textSize = 26),
+            104 to RpnButton("÷", textSize = 26),
+            204 to RpnButton("×", textSize = 26),
+            304 to RpnButton("-", textSize = 26),
+            404 to RpnButton("+", textSize = 26),
+        )
+        val regDown = hashMapOf(
+            0 to RpnButton("REG", RpnColor.green),
+            1 to RpnButton("STO", RpnColor.green),
+            2 to RpnButton("RCL", RpnColor.green),
+            3 to RpnButton("CLR", RpnColor.green),
+            4 to RpnButton("^", RpnColor.green, textSize = 26),
+            104 to RpnButton("÷", RpnColor.green, textSize = 26),
+            204 to RpnButton("×", RpnColor.green, textSize = 26),
+            304 to RpnButton("-", RpnColor.green, textSize = 26),
+            404 to RpnButton("+", RpnColor.green, textSize = 26),
+        )
+        val stackUp = hashMapOf(
+            0 to RpnButton("STK", RpnColor.red),
+            1 to RpnButton("EXP", RpnColor.orange),
+            2 to RpnButton("π", RpnColor.orange),
+            3 to RpnButton("DEL"),
+            4 to RpnButton("^", textSize = 26),
+        )
+        val stackDown = hashMapOf(
+            0 to RpnButton("STK", RpnColor.blue),
+            1 to RpnButton("DUP", RpnColor.blue),
+            2 to RpnButton("SWP", RpnColor.blue),
+            3 to RpnButton("DROP", RpnColor.blue),
+            4 to RpnButton("CLR", RpnColor.blue),
+        )
 
-    private fun setShiftedButton(state:KbdState, resId:Int) {
-        val button = findViewById<Button>(resId)!!
-        val (buttonUp, buttonDown) = buttonInfo[resId]!!
-        val b = if(state == KbdState.shiftUp) buttonUp else buttonDown
-        button.text = b.text
-        button.setTextColor(b.textColor.color)
-    }
-    private fun setShiftedButtons(state:KbdState) {
-        kbdState = state
-        buttonInfo.map{setShiftedButton(state, it.key)}
+        val stateMap = hashMapOf<Pair<KbdState,KbdState>,Map<Int,RpnButton>>(
+            Pair(KbdState.shiftUp,KbdState.shiftDown) to shiftDown,
+            Pair(KbdState.shiftDown,KbdState.shiftUp) to shiftUp,
+
+            Pair(KbdState.shiftUp,KbdState.register) to regDown,
+            Pair(KbdState.register,KbdState.shiftUp) to regUp,
+
+            Pair(KbdState.shiftDown,KbdState.stack) to stackDown,
+            Pair(KbdState.stack,KbdState.shiftDown) to stackUp,
+        )
+
+        fun Int.toButton(): Button = allButtons[this/100][this%100]
+        val buttonInfo = stateMap[Pair(kbdState, newState)]
+        kbdState = newState
+        for (id in buttonInfo!!.keys) {
+            val button = id.toButton()
+            val rpnButton = buttonInfo[id]!!
+            button.text = rpnButton.text
+            button.setTextColor(rpnButton.textColor.color)
+            button.textSize = rpnButton.textSize.toFloat()
+        }
     }
     @SuppressLint("SetTextI18n")
     private fun buttonClickHandler (button: Button, isLongClick:Boolean = false) {
@@ -469,7 +527,7 @@ class MainActivity : AppCompatActivity(){
                         .apply()
             }
             "⇳SHFT" -> {
-                setShiftedButtons(
+                setKeyboardState(
                     if (kbdState == KbdState.shiftUp) KbdState.shiftDown
                     else KbdState.shiftUp
                 )
@@ -483,7 +541,10 @@ class MainActivity : AppCompatActivity(){
                 panelTextAppend(buttonText)
             }
             "STK" -> {
-                setShiftedButtons(KbdState.stack)
+                setKeyboardState(
+                    if(kbdState == KbdState.stack) KbdState.shiftDown
+                    else KbdState.stack
+                )
             }
             "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "E" -> {
                 if (buttonText == "EXP") {
@@ -498,7 +559,10 @@ class MainActivity : AppCompatActivity(){
             }
             // registers
             "REG" -> {
-                setShiftedButtons(KbdState.stack)
+                setKeyboardState(
+                    if(kbdState == KbdState.register) KbdState.shiftUp
+                    else KbdState.register
+                )
             }
             // change sign
             "CHS" -> {
