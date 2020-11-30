@@ -153,7 +153,7 @@ class MainActivity : AppCompatActivity(){
 
     private lateinit var panel_scroll   : ScrollView
 
-    private lateinit var allButtons     : List<List<Button>>
+    private lateinit var buttonMap     : Map<Int, Button>
     private lateinit var numberButtons  : List<Button>
     private lateinit var operatorButtons  : List<Button>
     private lateinit var nonNumberButtons  : List<Button>
@@ -233,10 +233,8 @@ class MainActivity : AppCompatActivity(){
                 del_clr_button.text = "DEL"
             else if (rpnStack.isNotEmpty())
                 del_clr_button.text = "DROP"
-            for (x in allButtons.indices) {
-                for(y in allButtons[x].indices) {
-                    Log.d("allButtons", "$x:$y:${allButtons[x][y].text}")
-                }
+            for (key in buttonMap.keys.sorted()) {
+                Log.d("buttonsList", "$key:${buttonMap[key]!!.text}")
             }
             return true
         }
@@ -245,8 +243,9 @@ class MainActivity : AppCompatActivity(){
     // get a list of lists of all buttons under the keyboard by
     // row x column. 0,0 is top left, rr[lastIndex][lastIndex]
     // bottom right.
-    private fun getAllButtonViews () : ArrayList<ArrayList<Button>> {
-        val rr = ArrayList<ArrayList<Button>>()
+    private fun getButtonViews () : Map<Int, Button> {
+        var minor = 0
+        val m = hashMapOf<Int, Button>()
         fun getViewChildren(vg: ViewGroup) {
             val l = arrayListOf<Button>()
             (0 until vg.childCount).forEach{i ->
@@ -254,17 +253,15 @@ class MainActivity : AppCompatActivity(){
                 if (v is ViewGroup) getViewChildren(v)
                 else l.add(v as Button)
             }
-            // index column by row.
-            for(y in l.indices) {
-                if (y > rr.lastIndex)
-                    rr.add(arrayListOf())
-                rr[y].add(l[y])
+            // key is row/colum where 0 refers to top-right
+            // button and 504 is bottom right.
+            l.forEachIndexed{ index, button ->
+                m[(index * 100) + minor] = button
             }
-            // if (l.size > 0)
-                // rr.add(l)
+            minor++
         }
         getViewChildren(findViewById<LinearLayout>(R.id.keyboard_root))
-        return rr
+        return m
     }
 
 
@@ -300,8 +297,9 @@ class MainActivity : AppCompatActivity(){
         val num = mutableListOf<Button>()
         val notNum = mutableListOf<Button>()
         val operators = mutableListOf<Button>()
-        allButtons = getAllButtonViews()
-        allButtons.flatten().forEach{ button->
+        buttonMap = getButtonViews()
+        buttonMap.keys.forEach{ key ->
+            val button = buttonMap[key]!!
             button.setOnLongClickListener{
                 // Play a click sound.
                 (getSystemService(Context.AUDIO_SERVICE) as AudioManager)
@@ -480,11 +478,10 @@ class MainActivity : AppCompatActivity(){
             Pair(KbdState.stack,KbdState.shiftDown) to stackUp,
         )
 
-        fun Int.toButton(): Button = allButtons[this/100][this%100]
         val buttonInfo = stateMap[Pair(kbdState, newState)]
         kbdState = newState
         for (id in buttonInfo!!.keys) {
-            val button = id.toButton()
+            val button = buttonMap[id]!!
             val rpnButton = buttonInfo[id]!!
             button.text = rpnButton.text
             button.setTextColor(rpnButton.textColor.color)
