@@ -161,42 +161,42 @@ fun testRegOps() :Pair<Int,Int>{
     RpnParser.registers.clear()
 
     totalTests++
-    if (printResult("777 ALL REG CLR 999",
+    if (printResult("777 REG ALL CLR 999",
                     "[777.00:777.0, 999.00:999.0]",
                     "")
     ) testsPassed++
     totalTests++
-    if (printResult("15 2 REG STO 2 REG RCL 999",
+    if (printResult("15 REG 2 STO REG 2 RCL 999",
                     "[REG=2:15.0, 999.00:999.0]",
                     "")
     ) testsPassed++
     totalTests++
-    if (printResult("777 2 REG CLR 2 REG RCL 999",
+    if (printResult("777 REG 2 CLR REG 2 RCL 999",
                     "[777.00:777.0]",
                     "2 RCL: register[2] is empty.")
     ) testsPassed++
     totalTests++
-    if (printResult("777 888 2 REG STO 123 99 REG STO ALL REG RCL 999",
+    if (printResult("777 888 REG 2 STO 123 REG 99 STO REG ALL RCL 999",
                     "[777.00:777.0, REG=2:888.0, REG=99:123.0, 999.00:999.0]",
                     "")
     ) testsPassed++
     totalTests++
-    if (printResult("777 100 REG CLR 999",
+    if (printResult("777 REG 99 CLR 999",
+                    "[777.00:777.0, 999.00:999.0]",
+                    "")
+    ) testsPassed++
+    totalTests++
+    if (printResult("777 REG 100 CLR 999",
                     "[777.00:777.0]",
-                    "100 REG CLR: register is empty")
+                    "REG 100 CLR: FAILED:isIndex: 100.0 out of range 0..99")
     ) testsPassed++
     totalTests++
-    if (printResult("777 101 REG CLR 999",
-                    "[777.00:777.0, 101.00:101.0]",
-                    "101.00 REG: isIndex: 101.0 out of range 1..100")
-    ) testsPassed++
-    totalTests++
-    if (printResult("ALL REG CLR 20 5 REG STO 10 5 REG / 999 5 REG RCL",
+    if (printResult("REG ALL CLR 20 REG 5 STO 10 REG 5 / 999 REG 5 RCL",
                     "[999.00:999.0, REG=5:2.0]",
                     "")
     ) testsPassed++
     totalTests++
-    if (printResult("ALL REG CLR 20 6 REG / 6 REG RCL 999",
+    if (printResult("REG ALL CLR 20 REG 6 / REG 6 RCL 999",
                     "[REG=6:0.0, 999.00:999.0]",
                     "")
     ) testsPassed++
@@ -209,19 +209,19 @@ fun saveAndRestoreRegisters() :Pair<Int,Int>{
     RpnParser.registers.clear()
 
     totalTests++
-    if (printResult("777 888 2 REG STO 123 99 REG STO 27 27 REG STO ALL REG STORABLE 999",
-    "[777.00:777.0, STORABLE:zc3tr19uvojk:2:REG=2:NaN, STORABLE:z5w0yevhfk00:27:REG=27:NaN, STORABLE:z8n3w9eryebk:99:REG=99:NaN, 999.00:999.0]",
+    if (printResult("777 888 REG 2 STO 123 REG 99 STO 27 REG 27 STO REG ALL STORABLE 999",
+    "[777.00:777.0, STORABLE:zc3tr19uvojk:-1:REG=2:NaN, STORABLE:z5w0yevhfk00:-1:REG=27:NaN, STORABLE:z8n3w9eryebk:-1:REG=99:NaN, 999.00:999.0]",
     "")
     ) testsPassed++
     totalTests++
-    if (printResult("8888 ALL REG CLR STORABLE:z5w0yevhfk00:27 " +
-                    "STORABLE:z8n3w9eryebk:99 STORABLE:zc3tr19uvojk:2 ALL REG RCL 9999",
+    if (printResult("8888 REG ALL CLR STORABLE:z5w0yevhfk00:27 " +
+                    "STORABLE:z8n3w9eryebk:99 STORABLE:zc3tr19uvojk:2 REG ALL RCL 9999",
                     "[8,888.00:8888.0, REG=2:888.0, REG=27:27.0, REG=99:123.0, 9,999.00:9999.0]",
                     "")
     ) testsPassed++
     totalTests++
-    if (printResult("8888 ALL REG CLR STORABLE:z5w0yevhfk00:27 " +
-                    "STORABLE:z8n3w9eryebk:99 STORABLE:zc3tr19uvojk:2 ALL REG RCL 9999",
+    if (printResult("8888 REG ALL CLR STORABLE:z5w0yevhfk00:27 " +
+                    "STORABLE:z8n3w9eryebk:99 STORABLE:zc3tr19uvojk:2 REG ALL RCL 9999",
                     "[8,888.00:8888.0, REG=2:888.0, REG=27:27.0, REG=99:123.0, 9,999.00:9999.0]",
                     "")
     ) testsPassed++

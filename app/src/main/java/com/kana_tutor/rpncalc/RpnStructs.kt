@@ -70,6 +70,19 @@ data class RpnToken(var token: String, var value : Double = java.lang.Double.NaN
                 }
             )
         }
+        fun RpnToken?.isDoubleOrNull() : Boolean? {
+            var rv : Boolean? = null
+            if (this != null) {
+                try {
+                    this.value.toDouble()
+                    rv = true
+                }
+                catch (e: Exception){
+                    rv = false
+                }
+            }
+            return rv
+        }
         fun RpnToken.fromStorable():RpnToken? {
             var rv : RpnToken? = null
             val tok = this.token.split(":")
@@ -180,6 +193,7 @@ class RpnMap {
             else null
         )
     }
+    fun remove(key : Int) : RpnToken? = map.remove(key)
     fun containsKey(key : Int) : Boolean = map.containsKey(key)
     fun clear() = map.clear()
     fun toStorable() : List<RpnToken> {

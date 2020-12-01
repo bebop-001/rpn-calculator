@@ -11,6 +11,7 @@ import com.kana_tutor.rpncalc.RpnStack.Companion.rmLast
 import com.kana_tutor.rpncalc.RpnToken.Companion.asDouble
 import com.kana_tutor.rpncalc.RpnToken.Companion.asIndex
 import com.kana_tutor.rpncalc.RpnToken.Companion.fromStorable
+import com.kana_tutor.rpncalc.RpnToken.Companion.isDoubleOrNull
 import com.kana_tutor.rpncalc.RpnToken.Companion.isIndex
 import com.kana_tutor.rpncalc.RpnToken.Companion.isNumber
 import com.kana_tutor.rpncalc.RpnToken.Companion.toStorable
@@ -18,7 +19,7 @@ import java.lang.RuntimeException
 
 class RpnParserException (message:String) : Exception(message)
 const val RADIX = 36
-val registerRange = 1..100
+val registerRange = 0..99
 class RpnParser private constructor() {
     companion object {
         var registers = RpnMap()
@@ -90,7 +91,7 @@ class RpnParser private constructor() {
                     "÷", "/" -> lv / rv
                     "^" -> lv.pow(rv)
                     else -> {
-                        rpnError = "mathOp: %this: unrecognized operator."
+                        rpnError = "mathOp: $this: unrecognized operator."
                         Double.NaN
                     }
                 }
@@ -177,20 +178,7 @@ class RpnParser private constructor() {
                         if (outStack.size >= 2) {
                             var rVal = outStack.rmLast()!!
                             var lVal = outStack.rmLast()!!
-                            if (rVal.token == "REG") {
-                                if (outStack.isEmpty())
-                                    rpnError = "${lVal.token} REG ${current.token}: Stack is empty."
-                                else {
-                                    val idx = lVal.asIndex()!!
-                                    rVal = outStack.removeLast()
-                                    lVal  =
-                                            if (registers.containsKey(idx))
-                                                registers[idx]!!
-                                            else RpnToken(0.0)
-                                    registers[idx] = current.token.mathOp(lVal, rVal)
-                                }
-                            }
-                            else if (rVal.isNumber()!! && lVal.isNumber()!!) {
+                            if (rVal.isNumber()!! && lVal.isNumber()!!) {
                                 outStack.add(current.token.mathOp(lVal, rVal))
                             }
                             else {
@@ -201,33 +189,78 @@ class RpnParser private constructor() {
                     }
                     "STACK", "LIST", "ALL", "FORMAT" -> { outStack.add(current)}
                     "REG" -> {
-                        if (outStack.isNotEmpty()) {
-                            val lastElement = outStack.peekLast()!!
-                            if (lastElement.token == "ALL" || lastElement.isIndex()!!)
-                                outStack.add(current)
-                            else rpnError = "${lastElement.token} REG: ${RpnToken.error}"
+                        if (inStack.size >= 2) {
+                            val v1 = inStack.removeAt(1)
+                            val v2 = inStack.removeAt(0)
+                            if (v1.token == "CLR") {
+                                if (v2.token == "ALL")
+                                    registers.clear()
+                                else if (v2.isIndex()!!) {
+                                    val i = v2.value.toInt()
+                                    if (registers.containsKey(i))
+                                        registers.remove(i)
+                                    else "$i REG CLR: register[$i] is empty"
+                                }
+                                else rpnError = "REG ${v2.token} CLR: FAILED:${RpnToken.error}"
+                            }
+                            else if (v1.token == "STO") {
+                                if (v2.isIndex()!!) {
+                                    val i = v2.value.toInt()
+                                    if (outStack.isNotEmpty()) {
+                                        val v3 = outStack.removeLast()!!
+                                        if (v3.isDoubleOrNull()!!)
+                                            registers[i] = RpnToken("REG=$i", v3.value)
+                                        else rpnError =
+                                            "REG ${v3.token} STO:Expected Double found ${v3.token}"
+                                    }
+                                    else rpnError = "REG ${v2.token} STO: Empty Stack"
+                                }
+                                else rpnError = "REG ${v2.token} STO: ${v2.token} not an index"
+                            }
+                            else if (v1.token == "RCL") {
+                                if (v2.isIndex()!!) {
+                                    val i = v2.value.toInt()
+                                    if (registers.containsKey(i))
+                                        outStack.add(registers[i])
+                                    else rpnError = "$i RCL: register[$i] is empty."
+                                }
+                                else if (v2.token == "ALL") {
+                                    registers.keys.sorted()
+                                        .forEach{outStack.add(registers[it])}
+                                }
+                                else rpnError = "REG ${v2.token} RCL: ${v2.token} not an index"
+                            }
+                            else if (listOf("+", "-", "×", "*", "÷", "/", "^").contains(v1.token)) {
+                                if (v2.isIndex()!!) {
+                                    val i = v2.value.toInt()
+                                    val rVal = outStack.removeLast()
+                                    val lVal  =
+                                            if (registers.containsKey(i))
+                                                registers[i]!!
+                                            else RpnToken(0.0)
+                                    registers[i] = v1.token.mathOp(lVal, rVal)
+                                }
+                            }
+                            else if (v1.token == "STORABLE") {
+                                if (v2.token == "ALL") {
+                                    registers.keys.sorted().forEach{
+                                        outStack.add(registers[it]!!.toStorable())
+                                    }
+                                }
+                                else if (v2.isIndex()!!) {
+
+                                }
+                            }
+                            else rpnError = "REG: ${v1.token} unexpected token."
                         }
-                        else rpnError = "REG: stack is empty"
+                        else rpnError = "REG: empty stack"
                     }
                     "CLR" -> {
-                        var op = outStack.rmLast()
-                        if (op != null) {
-                            if (op.token == "STACK") {
+                        var v1 = outStack.rmLast()
+                        if (v1 != null) {
+                            if (v1.token == "STACK") {
                                 outStack.clear()
                             }
-                            else if (op.token == "REG") {
-                                // REG checked so we know this is all or an index.
-                                op = outStack.rmLast()!!
-                                if (op.token == "ALL") {
-                                    registers.clear()
-                                }
-                                else if (op.isIndex()!!) {
-                                    if (registers.rm(op.asIndex()!!) == null)
-                                        rpnError = "${op.asIndex()} REG CLR: register is empty"
-                                }
-                                else rpnError = "${op.token} REG CLR: unexpected ${op.token}"
-                            }
-                            else rpnError = "CLR: unexpected token: ${op.token}"
                         }
                         else rpnError = "CLR: empty stack"
                     }
@@ -283,32 +316,32 @@ class RpnParser private constructor() {
                     "RAD", "DEG" -> {
                         outStack.add(current)
                     }
-                        "SIN", "COS", "TAN" -> {
-                            val degOrRad = outStack.peekLast()?.token
-                            var angle = outStack.peekLast(-1)?.asDouble()
-                            if (degOrRad != null && angle != null) {
-                                angle = when (degOrRad) {
-                                    "RAD" -> angle
-                                    "DEG" -> angle.degreesToRadians()
-                                    else -> null
-                                }
-                                if (angle == null)
-                                    rpnError = "${current.token}: \"$degOrRad\": not DEG or RAD: $degOrRad"
-                                else {
-                                    val result = when (current.token) {
-                                        "SIN" -> sin(angle)
-                                        "COS" -> cos(angle)
-                                        "TAN" -> tan(angle)
-                                        else -> {
-                                            0.0 /* can't happen. */
-                                        }
-                                    }
-                                    outStack.rmLast()
-                                    outStack.setLast(RpnToken(result))
-                                }
+                    "SIN", "COS", "TAN" -> {
+                        val degOrRad = outStack.peekLast()?.token
+                        var angle = outStack.peekLast(-1)?.asDouble()
+                        if (degOrRad != null && angle != null) {
+                            angle = when (degOrRad) {
+                                "RAD" -> angle
+                                "DEG" -> angle.degreesToRadians()
+                                else -> null
                             }
-                            else rpnError = "$current.token:$rpnError"
+                            if (angle == null)
+                                rpnError = "${current.token}: \"$degOrRad\": not DEG or RAD: $degOrRad"
+                            else {
+                                val result = when (current.token) {
+                                    "SIN" -> sin(angle)
+                                    "COS" -> cos(angle)
+                                    "TAN" -> tan(angle)
+                                    else -> {
+                                        0.0 /* can't happen. */
+                                    }
+                                }
+                                outStack.rmLast()
+                                outStack.setLast(RpnToken(result))
+                            }
                         }
+                        else rpnError = "$current.token:$rpnError"
+                    }
                         "ASIN", "ACOS", "ATAN" -> {
                             var degOrRad = outStack.peekLast()?.token
                             val value = outStack.peekLast(-1)?.asDouble()
