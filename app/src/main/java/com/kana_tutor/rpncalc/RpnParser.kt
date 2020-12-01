@@ -221,7 +221,7 @@ class RpnParser private constructor() {
                                 if (v2.isIndex()!!) {
                                     val i = v2.value.toInt()
                                     if (registers.containsKey(i))
-                                        outStack.add(registers[i])
+                                        outStack.add(RpnToken(registers[i]!!.value))
                                     else rpnError = "$i RCL: register[$i] is empty."
                                 }
                                 else if (v2.token == "ALL") {

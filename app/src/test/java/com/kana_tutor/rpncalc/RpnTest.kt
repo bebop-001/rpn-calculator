@@ -167,7 +167,7 @@ fun testRegOps() :Pair<Int,Int>{
     ) testsPassed++
     totalTests++
     if (printResult("15 REG 2 STO REG 2 RCL 999",
-                    "[REG=2:15.0, 999.00:999.0]",
+                    "[15.00:15.0, 999.00:999.0]",
                     "")
     ) testsPassed++
     totalTests++
@@ -192,12 +192,12 @@ fun testRegOps() :Pair<Int,Int>{
     ) testsPassed++
     totalTests++
     if (printResult("REG ALL CLR 20 REG 5 STO 10 REG 5 / 999 REG 5 RCL",
-                    "[999.00:999.0, REG=5:2.0]",
+                    "[999.00:999.0, 2.00:2.0]",
                     "")
     ) testsPassed++
     totalTests++
     if (printResult("REG ALL CLR 20 REG 6 / REG 6 RCL 999",
-                    "[REG=6:0.0, 999.00:999.0]",
+                    "[0.00:0.0, 999.00:999.0]",
                     "")
     ) testsPassed++
 
