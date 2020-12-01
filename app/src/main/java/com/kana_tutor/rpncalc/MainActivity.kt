@@ -332,6 +332,12 @@ class MainActivity : AppCompatActivity(){
                 else
                     R.string.number_formatting_disabled
         panel_text_view = findViewById(R.id.panel_text_view)
+
+        // by default, only the number pad is enabled.
+        numberPad.addAll(digitButtons)
+        enableButtons(false)
+        enableButtons(true, numberPad)
+
         restoreRegisters()
     }
 
@@ -426,6 +432,22 @@ class MainActivity : AppCompatActivity(){
         RpnButton(2, "SWP"), RpnButton(3, "DROP"),
         RpnButton(4, "CLR"),
     )
+    private val digitButtons = listOf(
+            RpnButton(201, "7"),
+            RpnButton(202, "8"),
+            RpnButton(203, "9"),
+            RpnButton(301, "4"),
+            RpnButton(302, "5"),
+            RpnButton(303, "6"),
+            RpnButton(401, "1"),
+            RpnButton(402, "2"),
+            RpnButton(403, "3"),
+            RpnButton(502, "0"),
+    )
+    private var numberPad = mutableListOf (
+            RpnButton(501, "."),
+            RpnButton(503, "+/-", "CHS"),
+    )
 
     private fun setKeyboardState(newState:KbdState) {
         val shiftUp = listOf(
@@ -461,6 +483,7 @@ class MainActivity : AppCompatActivity(){
             RpnButtons(stackButtons, textColor = blue_text_color),
         )
 
+
         val stateMap = hashMapOf<Pair<KbdState,KbdState>,List<RpnButtons>>(
             Pair(KbdState.shiftUp,KbdState.shiftDown) to shiftDown,
             Pair(KbdState.shiftDown,KbdState.shiftUp) to shiftUp,
@@ -483,6 +506,27 @@ class MainActivity : AppCompatActivity(){
             }
         }
     }
+    // enable/disable buttons using list of buttons.  If no list
+    // is supplied, enable/disable all buttons.
+    private fun enableButtons(
+        enabled:Boolean = true, buttons : List<RpnButton>? = null
+    ) {
+        if (buttons == null) {
+            buttonMap.keys.forEach{buttonMap[it]!!.isEnabled = enabled}
+        }
+        else {
+            buttons.forEach{
+                val b = buttonMap[it.buttonKey]
+                if (b != null)
+                    b.isEnabled = enabled
+                else Log.d(
+                        "enableButtons",
+                        "${it.buttonKey}:${it.text} bad button"
+                )
+            }
+        }
+    }
+
     @SuppressLint("SetTextI18n")
     private fun buttonClickHandler (button: Button, isLongClick:Boolean = false) {
         @SuppressLint("SetTextI18n")
