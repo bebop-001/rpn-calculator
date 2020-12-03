@@ -255,6 +255,7 @@ class MainActivity : AppCompatActivity(){
         KbdState.shiftUp.preCheck = fun(_:KbdState) : Boolean {
             enableButton(RpnParser.registers.size > 0, registerButton)
             enableButton(accumulator.isNotEmpty(), expButton)
+            enableButton(accumulator.isEmpty(), decimalPointButton)
             if (accumulator.isNotEmpty() || rpnStack.isNotEmpty()) {
                 enableButtons()
                 if (accumulator.isNotEmpty()) {
