@@ -627,20 +627,30 @@ class MainActivity : AppCompatActivity(){
             }
             // change sign
             "CHS" -> {
-                if (accumulator.isNotEmpty())
-                    try {
-                        // we get an exception if this isn't a valid number.
-                        accumulator.toDouble()
-                        accumulator =   if (accumulator.startsWith("-"))
-                                            accumulator.removePrefix("-")
-                                        else "-$accumulator"
+                if (accumulator.isNotEmpty()) {
+                    // if this is a normal number, change toggle the first char
+                    // to/from "-"
+                    if ("^-*\\d+(?:\\.\\d+)*$".toRegex().matches(accumulator)) {
+                        if (accumulator.startsWith("-"))
+                            accumulator = accumulator.drop(1)
+                        else accumulator = "-$accumulator"
                         updateDisplay()
                     }
-                    catch (e:java.lang.Exception) {
-                        // ignore.  We used toDouble to test for accumulator
-                        // being a number.
+                    else {
+                        // if the number has an exponent, change the number on the
+                        // exponent.  eg: 1.5E7 <=> 1.5E-7
+                        val m = "^(-*\\d+(?:\\.\\d+)*E)(-*\\d+)$".toRegex().find(accumulator)
+                        if (m != null) {
+                            val pre = m.groupValues[1]
+                            var post = m.groupValues[2]
+                            if (post.startsWith("-"))
+                                post = post.drop(1)
+                            else post = "-$post"
+                            accumulator = "$pre$post"
+                            updateDisplay()
+                        }
                     }
-                else calculate(buttonText)
+                }
             }
             "+", "-", "×", "÷", "^", "SWAP", "DUP", "ENTR" -> {
                 calculate(buttonText)
