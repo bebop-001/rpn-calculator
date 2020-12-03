@@ -564,7 +564,6 @@ class MainActivity : AppCompatActivity(){
         }
 
         var buttonText = (button.tag as RpnButton).rpnToken
-        val buttonId = (button.tag as RpnButton).buttonKey
         Log.d("kbdState", "$kbdState")
         kbdState.preCheck(kbdState)
         when (buttonText) {
