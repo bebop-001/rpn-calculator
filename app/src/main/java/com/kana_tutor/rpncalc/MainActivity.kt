@@ -248,8 +248,8 @@ class MainActivity : AppCompatActivity(){
     }
     fun kbdStateInitialize() {
         KbdState.shiftUp.setup = fun(state:KbdState) : Boolean {
-            enableButtons(false)
-            enableButtons(true, numberPad)
+            setButtons(shiftUpButtons)
+            setButtons(listOf(expButton, piButton), orange_text_color)
             return state.preCheck(state)
         }
         KbdState.shiftUp.preCheck = fun(_:KbdState) : Boolean {
@@ -267,22 +267,43 @@ class MainActivity : AppCompatActivity(){
                     enableButton(!containsExp, expButton)
                 }
                 else {
+                    enableButton(false, expButton)
                     setButton(dropButton)
                 }
             }
             else {
                 enableButtons(false)
                 enableButtons(true, numberPad)
+                enableButton(true, piButton)
             }
             return true
         }
         KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
+
+        /*
+        fun List<List<RpnButton>>.merge() : List<RpnButton> {
+            val rv = mutableListOf<RpnButton>()
+            this.flatten().forEach{rv.add(it)}
+            return rv
+        }
+         */
+        KbdState.register.setup = fun(state:KbdState) : Boolean {
+            setButtons(merge(operatorButtons,registerButtons)
+                    , green_text_color)
+            return state.preCheck(state)
+        }
+
         KbdState.register.preCheck = fun(_:KbdState) : Boolean {
             enableButtons(false)
-            enableButtons(true, registerButtons)
-            enableButtons(true, digitButtons)
-            enableButtons(true, operatorButtons)
+            enableButtons(accumulator.isNotEmpty(), registerButtons)
+            enableButtons(accumulator.isNotEmpty(), operatorButtons)
             enableButton(accumulator.isNotEmpty(), delButton)
+            enableButton(true, registerButton)
+            enableButton(
+                accumulator.isNotEmpty() && rpnStack.isNotEmpty(),
+                storeButton)
+            enableButton(rpnStack.isNotEmpty(), regClearButton)
+            enableButtons(true, digitButtons)
             return true
         }
         KbdState.register.postCheck = KbdState.register.preCheck
@@ -386,6 +407,7 @@ class MainActivity : AppCompatActivity(){
         }
         kbdStateInitialize()
         pushKbdState(kbdState)
+        updateDisplay()
     }
 
     override fun onPause() {
@@ -462,7 +484,30 @@ class MainActivity : AppCompatActivity(){
                     .show()
         updateDisplay()
     }
+    private fun MutableList<RpnButton>._addAll(
+        vararg lists : List<RpnButton>
+    ) : MutableList<RpnButton> {
+        val rv = mutableListOf<RpnButton>()
+        rv.addAll(this)
+        lists.map{rv.addAll(it)}
+        return rv
+    }
+    private fun MutableList<RpnButton>._addAll(
+        vararg buttons : RpnButton
+    ) : MutableList<RpnButton> {
+        val rv = mutableListOf<RpnButton>()
+        rv.addAll(this)
+        buttons.map{rv.add(it)}
+        return rv
+    }
 
+    private fun merge(vararg lists : List<RpnButton>) : List<RpnButton> {
+        val rv = mutableListOf<RpnButton>()
+        lists.map{rv.addAll(it)}
+        return rv
+    }
+
+    private val degButton = RpnButton(101, "DEG")
     private val trigButtons = listOf(
         RpnButton(101, "SIN"), RpnButton(102, "COS"),
         RpnButton(103, "TAN"),
@@ -471,22 +516,25 @@ class MainActivity : AppCompatActivity(){
         RpnButton(101, "ASIN"), RpnButton(102, "ACOS"),
         RpnButton(103, "ATAN"),
     )
+    private val piButton = RpnButton(2, "π")
+    private val expButton = RpnButton(1, "EXP")
     private val operatorButtons = listOf(
         RpnButton(4, "^"), RpnButton(104, "÷"),
         RpnButton(204, "×"), RpnButton(304, "-"),
         RpnButton(404, "+"),
     )
     private val registerButton  = RpnButton(0, "REG")
+    private val storeButton = RpnButton(1, "STO")
+    private val regClearButton = RpnButton(4, "CLR")
     private val registerButtons = listOf(
-        registerButton, RpnButton(1, "STO"),
-        RpnButton(2, "RCL"), RpnButton(4, "CLR"),
+        registerButton, storeButton, regClearButton,
+        RpnButton(2, "RCL"),
     )
     private val stackButtons = listOf(
         RpnButton(0, "STK"), RpnButton(1, "DUP"),
         RpnButton(2, "SWP"), RpnButton(3, "DROP"),
         RpnButton(4, "CLR"),
     )
-    private val expButton = RpnButton(1, "EXP")
     private val digitButtons = listOf(
             RpnButton(201, "7"),
             RpnButton(202, "8"),
@@ -505,28 +553,43 @@ class MainActivity : AppCompatActivity(){
     )
     private var delButton = RpnButton(3, "DEL")
     private var dropButton = RpnButton(3, "DROP")
+    private val shiftUpButtons = mutableListOf(
+        registerButton, expButton, piButton, degButton
+    )._addAll(operatorButtons, numberPad)
     private fun setButton(
         button: RpnButton,
         textColor: ColorStateList = white_text_color,
         textSize:Int = 18) {
         val b = buttonMap[button.buttonKey]!!
         b.text = button.text
+        b.tag = button
         b.setTextColor(textColor)
         b.textSize = textSize.toFloat()
+    }
+    private fun setButtons(buttons:List<RpnButton>,
+        textColor: ColorStateList = white_text_color,
+        textSize:Int = 18) {
+        buttons.forEach{setButton(it, textColor, textSize)}
     }
     // saved/restored by system.
     private lateinit var kbdState : KbdState
     private lateinit var kbdStateStack:MutableList<KbdState>
-    private fun pushKbdState(newState:KbdState) {
+    private fun setKbdState(newState:KbdState) : KbdState {
         kbdState = newState
-        kbdStateStack.add(newState)
-        newState.preCheck(newState)
+        newState.setup(kbdState)
+        newState.preCheck(kbdState)
+        updateDisplay()
+        return newState
     }
-    private fun popKbdState() {
-        kbdState =  if (kbdStateStack.isNotEmpty())
-                        kbdStateStack.removeLast()
-                    else KbdState.shiftUp
-        kbdState.setup(kbdState)
+    private fun pushKbdState(newState:KbdState) : KbdState {
+        kbdStateStack.add(kbdState)
+        return setKbdState(newState)
+    }
+    private fun popKbdState() : KbdState {
+        val newState =  if (kbdStateStack.isNotEmpty())
+                            kbdStateStack.removeLast()
+                        else KbdState.shiftUp
+        return setKbdState(newState)
     }
     // enable/disable buttons using list of buttons.  If no list
     // is supplied, enable/disable all buttons.
@@ -564,9 +627,9 @@ class MainActivity : AppCompatActivity(){
             return str
         }
 
+        kbdState.preCheck(kbdState)
         var buttonText = (button.tag as RpnButton).rpnToken
         Log.d("kbdState", "$kbdState")
-        kbdState.preCheck(kbdState)
         when (buttonText) {
             "DEG" -> {
                 angleIsDegrees = false
@@ -620,10 +683,9 @@ class MainActivity : AppCompatActivity(){
             }
             // registers
             "REG" -> {
-                pushKbdState(
-                    if(kbdState == KbdState.register) KbdState.shiftUp
-                    else KbdState.register
-                )
+                    if(kbdState != KbdState.register)
+                        pushKbdState(KbdState.register)
+                    else popKbdState()
             }
             // change sign
             "CHS" -> {
