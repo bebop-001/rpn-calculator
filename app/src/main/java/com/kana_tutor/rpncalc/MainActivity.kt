@@ -1,4 +1,4 @@
-@file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName", "PrivatePropertyName")
+@file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName", "PrivatePropertyName", "EnumEntryName", "FunctionName", "UNCHECKED_CAST")
 
 package com.kana_tutor.rpncalc
 
@@ -19,15 +19,15 @@ import com.kana_tutor.rpncalc.kanautils.*
 
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
 
-private val blue_text_default       = 0xff00acc1.toInt()
-private val disabled_text_default   = 0xffae9696.toInt()
-private val green_text_default      = 0xff7bfd35.toInt()
-private val orange_text_default     = 0xffffbb33.toInt()
-private val red_text_default        = 0xfff4511e.toInt()
-private val white_text_default      = 0xffffffff.toInt()
-private val number_bg               = 0xff434343.toInt()
-private val operation_bg            = 0xff636363.toInt()
-private val shift_down_bg           = 0xfF7e7d7d.toInt()
+private const val blue_text_default       = 0xff00acc1.toInt()
+private const val disabled_text_default   = 0xffae9696.toInt()
+private const val green_text_default      = 0xff7bfd35.toInt()
+private const val orange_text_default     = 0xffffbb33.toInt()
+private const val red_text_default        = 0xfff4511e.toInt()
+private const val white_text_default      = 0xffffffff.toInt()
+private const val number_bg               = 0xff434343.toInt()
+private const val operation_bg            = 0xff636363.toInt()
+private const val shift_down_bg           = 0xfF7e7d7d.toInt()
 
 private val stateEnableDisable = arrayOf(
         intArrayOf(android.R.attr.state_enabled),  // Enabled
@@ -246,7 +246,7 @@ class MainActivity : AppCompatActivity(){
                 }
         },
     }
-    fun kbdStateInitialize() {
+    private fun kbdStateInitialize() {
         KbdState.shiftUp.setup = fun(state:KbdState) : Boolean {
             setButtons(shiftUpButtons)
             setButtons(merge(expButton, piButton), orange_text_color)
@@ -256,6 +256,11 @@ class MainActivity : AppCompatActivity(){
         KbdState.shiftUp.preCheck = fun(_:KbdState) : Boolean {
             if (accumulator.isNotEmpty() || rpnStack.isNotEmpty()) {
                 enableButtons()
+
+                if (angleIsDegrees) setButton(delButton)
+                else setButton(radButton)
+                setButtons(trigButtons)
+
                 if (accumulator.isNotEmpty()) {
                     setButton(delButton)
                     // block decimal if it's been pressed or you're in Exp mode.
@@ -328,7 +333,7 @@ class MainActivity : AppCompatActivity(){
                 if (v is ViewGroup) getViewChildren(v)
                 else l.add(v as Button)
             }
-            // key is row/colum where 0 refers to top-right
+            // key is row/column where 0 refers to top-right
             // button and 504 is bottom right.
             l.forEachIndexed{ index, button ->
                 m[(index * 100) + minor] = button
@@ -352,7 +357,7 @@ class MainActivity : AppCompatActivity(){
         // then establish our on-click listeners.
         buttonMap = getButtonViews()
         buttonMap.keys.forEach{ key ->
-            val button = buttonMap[key]!!
+            val button = buttonMap.getValue(key)
             button.setOnLongClickListener{
                 // Play a click sound.
                 (getSystemService(Context.AUDIO_SERVICE) as AudioManager)
@@ -375,7 +380,6 @@ class MainActivity : AppCompatActivity(){
     override fun onResume() {
         super.onResume()
         angleIsDegrees = sharedPreferences.getBoolean("angleIsDegrees", true)
-        findViewById<Button>(R.id.deg_rad_button).text = if (angleIsDegrees) "DEG" else "RAD"
         numberFormattingEnabled =
                 sharedPreferences.getBoolean("numberFormattingEnabled", true)
         RpnParser.setDigitsFormatting(
@@ -422,9 +426,7 @@ class MainActivity : AppCompatActivity(){
             .putString("accumulator", accumulator)
             .putInt("kbdState", kbdState.ordinal)
             .putString("kbdStateStack",
-                kbdStateStack
-                    .map{it.ordinal.toString()}
-                    .joinToString("\n"))
+                    kbdStateStack.joinToString("\n") { it.ordinal.toString() })
             .apply()
     }
 
@@ -498,17 +500,23 @@ class MainActivity : AppCompatActivity(){
     private fun merge(vararg buttons : Any) : List<RpnButton> {
         val rv = mutableListOf<RpnButton>()
         for (b in buttons) {
-            when {
-                b is RpnButton -> rv.add(b as RpnButton)
-                b is List<*> -> {
+            when (b) {
+                is RpnButton -> rv.add(b)
+                is List<*> -> {
+                    if (b.filter{it !is RpnButton}.isNotEmpty())
+                        throw RuntimeException(
+                                "Merge is only for RpnButton or RpnButtonList")
                     rv.addAll(b as List<RpnButton>)
                 }
+                else -> throw RuntimeException(
+                    "Merge is only for RpnButton or RpnButtonList")
             }
         }
         return rv
     }
 
-    private val degButton = RpnButton(101, "DEG")
+    private val degButton = RpnButton(100, "DEG")
+    private val radButton = RpnButton(100, "RAD")
     private val trigButtons = listOf(
         RpnButton(101, "SIN"), RpnButton(102, "COS"),
         RpnButton(103, "TAN"),
@@ -563,7 +571,7 @@ class MainActivity : AppCompatActivity(){
         button: RpnButton,
         textColor: ColorStateList = white_text_color,
         textSize:Int = 18) {
-        val b = buttonMap[button.buttonKey]!!
+        val b = buttonMap.getValue(button.buttonKey)
         b.text = button.text
         b.tag = button
         b.setTextColor(textColor)
@@ -612,7 +620,7 @@ class MainActivity : AppCompatActivity(){
     ) {
         if (buttons == null) {
             buttonMap.keys.forEach{
-                buttonMap[it]!!.isEnabled = enabled
+                buttonMap.getValue(it).isEnabled = enabled
             }
         }
         else buttons.forEach{enableButton(enabled, it)}
@@ -654,8 +662,8 @@ class MainActivity : AppCompatActivity(){
             }
             "⇳SHFT" -> {
                 pushKbdState(
-                    if (kbdState == KbdState.shiftUp) KbdState.shiftDown
-                    else KbdState.shiftUp
+                        if (kbdState == KbdState.shiftUp) KbdState.shiftDown
+                        else KbdState.shiftUp
                 )
             }
             "PI", "π" -> {
@@ -668,8 +676,8 @@ class MainActivity : AppCompatActivity(){
             }
             "STK" -> {
                 pushKbdState(
-                    if(kbdState == KbdState.stack) KbdState.shiftDown
-                    else KbdState.stack
+                        if (kbdState == KbdState.stack) KbdState.shiftDown
+                        else KbdState.stack
                 )
             }
             "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "EXP" -> {
@@ -678,7 +686,7 @@ class MainActivity : AppCompatActivity(){
                 enableButton(!containsDecimal && !containsExp, decimalPointButton)
                 enableButton(false, delButton)
                 if (buttonText == "EXP" && containsExp) buttonText = ""
-                if(containsDecimal && buttonText == ".") buttonText = ""
+                if (containsDecimal && buttonText == ".") buttonText = ""
                 if (buttonText == "EXP") buttonText = "E"
 
                 panelTextAppend(buttonText)
@@ -686,9 +694,9 @@ class MainActivity : AppCompatActivity(){
             }
             // registers
             "REG" -> {
-                    if(kbdState != KbdState.register)
-                        pushKbdState(KbdState.register)
-                    else popKbdState()
+                if (kbdState != KbdState.register)
+                    pushKbdState(KbdState.register)
+                else popKbdState()
             }
             // change sign
             "CHS" -> {
@@ -696,9 +704,9 @@ class MainActivity : AppCompatActivity(){
                     // if this is a normal number, change toggle the first char
                     // to/from "-"
                     if ("^-*\\d+(?:\\.\\d+)*$".toRegex().matches(accumulator)) {
-                        if (accumulator.startsWith("-"))
-                            accumulator = accumulator.drop(1)
-                        else accumulator = "-$accumulator"
+                        accumulator = if (accumulator.startsWith("-"))
+                            accumulator.drop(1)
+                        else "-$accumulator"
                         updateDisplay()
                     }
                     else {
@@ -708,16 +716,16 @@ class MainActivity : AppCompatActivity(){
                         if (m != null) {
                             val pre = m.groupValues[1]
                             var post = m.groupValues[2]
-                            if (post.startsWith("-"))
-                                post = post.drop(1)
-                            else post = "-$post"
+                            post = if (post.startsWith("-"))
+                                post.drop(1)
+                            else "-$post"
                             accumulator = "$pre$post"
                             updateDisplay()
                         }
                     }
                 }
             }
-            "+", "-", "×", "÷", "^", -> {
+            "+", "-", "×", "÷", "^" -> {
                 if (kbdState == KbdState.register) {
                     val a = accumulator
                     accumulator = ""
