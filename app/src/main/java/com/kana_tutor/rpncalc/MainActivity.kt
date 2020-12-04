@@ -727,13 +727,11 @@ class MainActivity : AppCompatActivity(){
                 accumulator = ""
                 if (isLongClick && buttonText == "CLR")
                     a = "ALL"
-                if (isLongClick && buttonText == "RCL") {
-                    val stk = RpnParser.rpnCalculate("REG ALL RCL".toRpnStack())
-                    Log.d("rcl all", "$stk")
+                // for now, parser puts reg values on stack.
+                else if (isLongClick && buttonText == "RCL") {
+                    a = "ALL"
                 }
-                else {
-                    calculate("REG $a $buttonText")
-                }
+                calculate("REG $a $buttonText")
                 popKbdState()
             }
             "DROP" -> {

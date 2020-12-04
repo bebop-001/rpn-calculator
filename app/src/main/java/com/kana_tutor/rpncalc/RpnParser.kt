@@ -2,6 +2,7 @@
 
 package com.kana_tutor.rpncalc
 
+import android.util.Log
 import com.kana_tutor.rpncalc.RpnStack.Companion.peekLast
 import java.text.DecimalFormat
 import kotlin.math.*
@@ -119,7 +120,7 @@ class RpnParser private constructor() {
                     outStack.add(current)
                     continue@next
                 }
-                if (current.token.contains(":")) {
+                if (current.token.contains(":") || current.token.startsWith("REG=")) {
                     val tok = current.token
                     try {
                         when {
@@ -141,6 +142,7 @@ class RpnParser private constructor() {
                                 else rpnError = "Bad storable token: $current"
                             }
                             tok.startsWith("format:") -> outStack.add(current)
+                            tok.startsWith("REG=") -> { /* Ignore. */ }
                             else -> rpnError = "Unrecognized : operator: \"$tok\""
                         }
                     }
@@ -224,8 +226,22 @@ class RpnParser private constructor() {
                                     else rpnError = "$i RCL: register[$i] is empty."
                                 }
                                 else if (v2.token == "ALL") {
-                                    registers.keys.sorted()
-                                        .forEach{outStack.add(registers[it])}
+                                    // registers.keys.sorted()
+                                    //    .forEach{outStack.add(registers[it])}
+                                    val keys = registers.keys.sorted()
+                                    val stk = mutableListOf<RpnToken>()
+                                    for (key in keys) {
+                                        val token = registers[key]!!
+                                        val t2 = RpnToken(
+                                            "%-8s %15s".format(
+                                                    token.token, token.value.toFloat()
+                                            ),
+                                            token.value
+                                        )
+                                        stk.add(t2)
+                                    }
+                                    outStack.addAll(stk)
+                                    Log.d("x", "X")
                                 }
                                 else rpnError = "REG ${v2.token} RCL: ${v2.token} not an index"
                             }
