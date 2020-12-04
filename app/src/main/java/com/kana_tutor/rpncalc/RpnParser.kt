@@ -248,13 +248,17 @@ class RpnParser private constructor() {
                             else if (listOf("+", "-", "×", "*", "÷", "/", "^").contains(v1.token)) {
                                 if (v2.isIndex()!!) {
                                     val i = v2.value.toInt()
-                                    val rVal = outStack.removeLast()
-                                    val lVal  =
-                                            if (registers.containsKey(i))
-                                                registers[i]!!
-                                            else RpnToken(0.0)
-                                    registers[i] = v1.token.mathOp(lVal, rVal)
+                                    if (outStack.size > 0) {
+                                        val rVal = outStack.removeLast()
+                                        val lVal =
+                                                if (registers.containsKey(i))
+                                                    registers[i]!!
+                                                else RpnToken(0.0)
+                                        registers[i] = v1.token.mathOp(lVal, rVal)
+                                    }
+                                    else rpnError = "REG ${v2.token}: stack is empty."
                                 }
+                                else rpnError = "REG ${v2.token} ${v1.token}: ${v2.token} not an index"
                             }
                             else if (v1.token == "STORABLE") {
                                 if (v2.token == "ALL") {
