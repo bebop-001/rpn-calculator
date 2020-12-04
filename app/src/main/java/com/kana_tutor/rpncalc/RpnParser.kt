@@ -2,7 +2,6 @@
 
 package com.kana_tutor.rpncalc
 
-import com.kana_tutor.rpncalc.RpnMap.Companion.rm
 import com.kana_tutor.rpncalc.RpnStack.Companion.peekLast
 import java.text.DecimalFormat
 import kotlin.math.*
@@ -24,7 +23,7 @@ class RpnParser private constructor() {
     companion object {
         var registers = RpnMap()
         var printTrace = false
-        var rpnError = ""
+        private var rpnError = ""
         private var _trace_  = false
         // debug trace statement.  Turn trace on/off
         // if the trace string is trace:on/trace:off
@@ -176,8 +175,8 @@ class RpnParser private constructor() {
                     // op that expects two floats on stack.
                     "+", "-", "×", "*", "÷", "/", "^" -> {
                         if (outStack.size >= 2) {
-                            var rVal = outStack.rmLast()!!
-                            var lVal = outStack.rmLast()!!
+                            val rVal = outStack.rmLast()!!
+                            val lVal = outStack.rmLast()!!
                             if (rVal.isNumber()!! && lVal.isNumber()!!) {
                                 outStack.add(current.token.mathOp(lVal, rVal))
                             }
@@ -199,7 +198,7 @@ class RpnParser private constructor() {
                                     val i = v2.value.toInt()
                                     if (registers.containsKey(i))
                                         registers.remove(i)
-                                    else "$i REG CLR: register[$i] is empty"
+                                    else rpnError = "$i REG CLR: register[$i] is empty"
                                 }
                                 else rpnError = "REG ${v2.token} CLR: FAILED:${RpnToken.error}"
                             }
@@ -248,7 +247,7 @@ class RpnParser private constructor() {
                                     }
                                 }
                                 else if (v2.isIndex()!!) {
-
+                                    outStack.add(registers[v2.value.toInt()]!!.toStorable())
                                 }
                             }
                             else rpnError = "REG: ${v1.token} unexpected token."
@@ -256,7 +255,7 @@ class RpnParser private constructor() {
                         else rpnError = "REG: empty stack"
                     }
                     "CLR" -> {
-                        var v1 = outStack.rmLast()
+                        val v1 = outStack.rmLast()
                         if (v1 != null) {
                             if (v1.token == "STACK") {
                                 outStack.clear()
@@ -276,9 +275,7 @@ class RpnParser private constructor() {
                                 when (current.token) {
                                     "STO" -> {
                                         when {
-                                            v2.isIndex()!! -> registers.set(
-                                                v2.asIndex()!!,
-                                                outStack.rmLast()!!)
+                                            v2.isIndex()!! -> registers[v2.asIndex()!!] = outStack.rmLast()!!
                                             v1.token == "FORMAT" ->
                                                 v2.setDigitsFormatting()
                                             else -> rpnError =
