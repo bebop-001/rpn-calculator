@@ -250,12 +250,10 @@ class MainActivity : AppCompatActivity(){
         KbdState.shiftUp.setup = fun(state:KbdState) : Boolean {
             setButtons(shiftUpButtons)
             setButtons(listOf(expButton, piButton), orange_text_color)
+            enableButton(RpnParser.registers.size > 0, regButton)
             return state.preCheck(state)
         }
         KbdState.shiftUp.preCheck = fun(_:KbdState) : Boolean {
-            enableButton(RpnParser.registers.size > 0, registerButton)
-            enableButton(accumulator.isNotEmpty(), expButton)
-            enableButton(accumulator.isEmpty(), decimalPointButton)
             if (accumulator.isNotEmpty() || rpnStack.isNotEmpty()) {
                 enableButtons()
                 if (accumulator.isNotEmpty()) {
@@ -267,7 +265,7 @@ class MainActivity : AppCompatActivity(){
                     enableButton(!containsExp, expButton)
                 }
                 else {
-                    enableButton(false, expButton)
+                    enableButtons(false, listOf(expButton, decimalPointButton))
                     setButton(dropButton)
                 }
             }
@@ -276,6 +274,10 @@ class MainActivity : AppCompatActivity(){
                 enableButtons(true, numberPad)
                 enableButton(true, piButton)
             }
+            enableButton(
+                RpnParser.registers.size > 0 || accumulator.isNotEmpty(),
+                regButton)
+
             return true
         }
         KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
@@ -294,20 +296,22 @@ class MainActivity : AppCompatActivity(){
         }
 
         KbdState.register.preCheck = fun(_:KbdState) : Boolean {
-            enableButtons(false)
-            enableButtons(accumulator.isNotEmpty(), registerButtons)
-            enableButtons(accumulator.isNotEmpty(), operatorButtons)
-            enableButton(accumulator.isNotEmpty(), delButton)
-            enableButton(true, registerButton)
-            enableButton(
-                accumulator.isNotEmpty() && rpnStack.isNotEmpty(),
-                storeButton)
-            enableButton(rpnStack.isNotEmpty(), regClearButton)
+            val regIsNotEmpty = RpnParser.registers.size > 0
+            val accIsNotEmpty = accumulator.isNotEmpty()
+            val stkIsNotEmpty = rpnStack.isNotEmpty()
+            enableButtons(accIsNotEmpty, registerButtons)
+            enableButtons(accIsNotEmpty, operatorButtons)
+            enableButton(true, regButton)
+            enableButton(accIsNotEmpty, delButton)
+            enableButton(regIsNotEmpty, regRclButton)
+            enableButton(accIsNotEmpty && stkIsNotEmpty,
+                regStoButton)
+            enableButton(regIsNotEmpty || accIsNotEmpty,
+                regClearButton)
             enableButtons(true, digitButtons)
             return true
         }
         KbdState.register.postCheck = KbdState.register.preCheck
-
     }
 
     // get a list of lists of all buttons under the keyboard by
@@ -523,12 +527,13 @@ class MainActivity : AppCompatActivity(){
         RpnButton(204, "×"), RpnButton(304, "-"),
         RpnButton(404, "+"),
     )
-    private val registerButton  = RpnButton(0, "REG")
-    private val storeButton = RpnButton(1, "STO")
+    private val regButton  = RpnButton(0, "REG")
+    private val regStoButton = RpnButton(1, "STO")
     private val regClearButton = RpnButton(4, "CLR")
+    private val regRclButton =  RpnButton(2, "RCL")
+
     private val registerButtons = listOf(
-        registerButton, storeButton, regClearButton,
-        RpnButton(2, "RCL"),
+        regButton, regStoButton, regClearButton, regRclButton
     )
     private val stackButtons = listOf(
         RpnButton(0, "STK"), RpnButton(1, "DUP"),
@@ -554,7 +559,7 @@ class MainActivity : AppCompatActivity(){
     private var delButton = RpnButton(3, "DEL")
     private var dropButton = RpnButton(3, "DROP")
     private val shiftUpButtons = mutableListOf(
-        registerButton, expButton, piButton, degButton
+        regButton, expButton, piButton, degButton
     )._addAll(operatorButtons, numberPad)
     private fun setButton(
         button: RpnButton,
@@ -717,10 +722,19 @@ class MainActivity : AppCompatActivity(){
             "+", "-", "×", "÷", "^", "SWAP", "DUP", "ENTR" -> {
                 calculate(buttonText)
             }
-            "STO", "RCL" -> {
-                val a = accumulator
+            "STO", "RCL", "CLR" -> {
+                var a = accumulator
                 accumulator = ""
-                calculate ("REG $a $buttonText")
+                if (isLongClick && buttonText == "CLR")
+                    a = "ALL"
+                if (isLongClick && buttonText == "RCL") {
+                    val stk = RpnParser.rpnCalculate("REG ALL RCL".toRpnStack())
+                    Log.d("rcl all", "$stk")
+                }
+                else {
+                    calculate("REG $a $buttonText")
+                }
+                popKbdState()
             }
             "DROP" -> {
                 if (isLongClick) {
@@ -733,9 +747,6 @@ class MainActivity : AppCompatActivity(){
                     accumulator =   if (isLongClick) ""
                                     else accumulator.dropLast(1)
                     updateDisplay()
-            }
-            "CLR" -> {
-                calculate("\nREG\nCLR\n")
             }
             "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                 val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
