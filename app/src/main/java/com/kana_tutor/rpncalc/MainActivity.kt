@@ -1,4 +1,4 @@
-git @file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName", "PrivatePropertyName", "EnumEntryName", "FunctionName", "UNCHECKED_CAST")
+@file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName", "PrivatePropertyName", "EnumEntryName", "FunctionName", "UNCHECKED_CAST")
 
 package com.kana_tutor.rpncalc
 
@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.kana_tutor.rpncalc.kanautils.*
 
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
+import java.io.File
 
 private const val blue_text_default       = 0xff00acc1.toInt()
 private const val disabled_text_default   = 0xffae9696.toInt()
@@ -92,44 +93,38 @@ class MainActivity : AppCompatActivity(){
          */
     }
     private fun saveRegisters() {
-        /*
-        val asString = RpnParser.registers.map{ (key,value)->
-            "$key ${value.toLongBitsString()}"}
-                .joinToString("\n")
-        val registersDir = File("${getFilesDir()}/registers")
-        if (!registersDir.exists()) {
-            try {registersDir.mkdir()}
-            catch (e:Exception) {
-                throw RuntimeException("saveRegisters:mkdir $registersDir FAILED:$e")
-            }
-        }
+        val (stack, errors) = RpnParser.rpnCalculate("REG ALL STORABLE".toRpnStack())
+        if (errors.isNotEmpty())
+            throw java.lang.RuntimeException(
+                    "errors occured while restoring registers:$errors")
+        val toStore = stack.map{it.toString()}.joinToString("\n")
+        val registersDir = File("${getFilesDir()}/data")
+        if (!registersDir.exists() && !registersDir.mkdir())
+            throw java.lang.RuntimeException(
+                    "saveRegisters: directory ${registersDir}\n" +
+                            "doesn't exist and mkdir FAILED>")
         val registersFile = File(registersDir, "registers.txt")
-        try { registersFile.writeText(asString) }
+        try { registersFile.writeText(toStore) }
         catch (e:java.lang.Exception) {
             throw RuntimeException("saveRegisters write $registersFile FAILED")
         }
-
-         */
     }
     private fun restoreRegisters() {
-        /*
-        val registers = mutableMapOf<Int, Double>()
-        val registersDir = File("${getFilesDir()}/registers")
+        val registersDir = File("${getFilesDir()}/data")
         val registersFile = File(registersDir, "registers.txt")
-        if (registersFile.exists()) {
-            val registerData = registersFile.readText()
-            registerData.split("\n").forEach{
-                val(idx, longBits) = it.split("\\s+".toRegex())
-                val value = longBits.longBitStringToDouble()
-                registers[idx.toInt()] = value
-            }
-        }
+        if (!registersFile.exists())
+            Log.d("restoreRegisters", "file $registersFile not found.")
         else {
-            Log.d("restoreRegisters", "$registersFile not found")
-        }
-        RpnParser.registers = registers
+            val registersAsString = registersFile.readText()
+            val stackOut = registersAsString.toRpnStack()
+            Log.d("restoreRegisters", "$stackOut")
 
-         */
+            /*
+            val (errors, stack) = RpnParser.rpnCalculate(registersAsString.toRpnStack())
+            Log.d("restoreRegisters", "$errors")
+
+             */
+        }
     }
 
     private lateinit var panel_text_view : TextView
