@@ -141,13 +141,13 @@ class MainActivity : AppCompatActivity(){
     private var rpnStack = RpnStack()
     private var accumulator = ""
 
-    private data class RpnButton(
+    private data class RpnBtn(
         val buttonKey : Int,
         val text:String,
         val rpnToken : String = text,
     )
     private class RpnButtons {
-        val buttons = mutableListOf<RpnButton>()
+        val buttons = mutableListOf<RpnBtn>()
         val textSize : Int
         val textColor : ColorStateList
         constructor(
@@ -157,12 +157,12 @@ class MainActivity : AppCompatActivity(){
             textColor:ColorStateList = white_text_color,
             textSize: Int = 18,)
         {
-            this.buttons.add(RpnButton(buttonKey, text, token))
+            this.buttons.add(RpnBtn(buttonKey, text, token))
             this.textColor = textColor
             this.textSize = textSize
         }
         constructor(
-            buttons:List<RpnButton>,
+            buttons:List<RpnBtn>,
             textColor:ColorStateList = white_text_color,
             textSize: Int = 18,)
         {
@@ -259,14 +259,14 @@ class MainActivity : AppCompatActivity(){
                 enableButtons()
 
                 if (angleIsDegrees) setButton(delButton)
-                else setButton(radButton)
+                else setButton(radBtn)
 
                 if (accumulator.isNotEmpty()) {
                     setButton(delButton)
                     // block decimal if it's been pressed or you're in Exp mode.
                     val containsExp = accumulator.contains("[\\d.]E".toRegex())
                     val containsDecimal = accumulator.contains(".")
-                    enableButton(!containsDecimal && !containsExp, decimalPointButton)
+                    enableButton(!containsDecimal && !containsExp, decimalPtBtn)
                     enableButton(!containsExp, expButton)
                 }
                 else {
@@ -281,7 +281,7 @@ class MainActivity : AppCompatActivity(){
             }
             enableButton(
                     RpnParser.registers.size > 0 || accumulator.isNotEmpty(),
-                    regButton)
+                    regBtn)
 
             return true
         }
@@ -289,7 +289,7 @@ class MainActivity : AppCompatActivity(){
 
         KbdState.shiftDown.setup = fun(state:KbdState) : Boolean {
             setButtons(shftDownBtns)
-            setButtons(rpnButtonMerge(shftBtn, stkBtn), red_text_color)
+            setButtons(rpnButtonMerge(shftBtn, stkBtn, arcTrigBtns), red_text_color)
             setButtons(rpnButtonMerge(expButton, piButton), orange_text_color)
             return state.preCheck(state)
         }
@@ -297,26 +297,26 @@ class MainActivity : AppCompatActivity(){
             enableButtons(accumulator.isNotEmpty() || rpnStack.isNotEmpty())
             enableButtons(true, numberPad)
             enableButton(rpnStack.isNotEmpty(), stkBtn)
-            if (angleIsDegrees) setButton(degButton)
-            else setButton(radButton)
+            if (angleIsDegrees) setButton(degBtn)
+            else setButton(radBtn)
             if (accumulator.isNotEmpty()) {
                 setButton(delButton)
                 // block decimal if it's been pressed or you're in Exp mode.
                 val containsExp = accumulator.contains("[\\d.]E".toRegex())
                 val containsDecimal = accumulator.contains(".")
-                enableButton(!containsDecimal && !containsExp, decimalPointButton)
+                enableButton(!containsDecimal && !containsExp, decimalPtBtn)
                 enableButton(!containsExp, expButton)
             }
             else {
                 enableButtons(false, rpnButtonMerge(expButton))
-                setButton(stkDropBtn, red_text_color)
+                setButton(stkDropBtn)
             }
             return true
         }
         KbdState.shiftDown.postCheck = KbdState.shiftDown.preCheck
 
         KbdState.register.setup = fun(state:KbdState) : Boolean {
-            setButtons(rpnButtonMerge(operatorButtons,registerButtons)
+            setButtons(rpnButtonMerge(operatorBtns,regBtns)
                     , green_text_color)
             return state.preCheck(state)
         }
@@ -325,21 +325,33 @@ class MainActivity : AppCompatActivity(){
             val regIsNotEmpty = RpnParser.registers.size > 0
             val accIsNotEmpty = accumulator.isNotEmpty()
             val stkIsNotEmpty = rpnStack.isNotEmpty()
-            enableButtons(false, rpnButtonMerge(chsButton, decimalPointButton))
+            enableButtons(false, rpnButtonMerge(chsBtn, decimalPtBtn))
             enableButtons(accIsNotEmpty,
-                rpnButtonMerge(registerButtons, delButton, regRclButton))
+                rpnButtonMerge(regBtns, delButton, regRclButton))
             enableButton(regIsNotEmpty, regRclButton)
             enableButton(accIsNotEmpty && stkIsNotEmpty,
-                    regStoButton)
+                    regStoBtn)
             enableButtons(accIsNotEmpty && stkIsNotEmpty && regIsNotEmpty,
-                    operatorButtons)
+                    operatorBtns)
             enableButton(regIsNotEmpty || accIsNotEmpty,
-                regClearButton)
-            enableButtons(true, rpnButtonMerge(regButton, digitButtons))
+                    regClrBtn)
+            enableButtons(true, rpnButtonMerge(regBtn, digitBtns))
             enableButton(false, shftBtn)
             return true
         }
         KbdState.register.postCheck = KbdState.register.preCheck
+
+        KbdState.stack.setup = fun(state:KbdState) : Boolean {
+            enableButtons(false)
+            setButtons(stkBtns, red_text_color)
+            return state.preCheck(state)
+        }
+
+        KbdState.stack.preCheck = fun(_:KbdState) : Boolean {
+            enableButtons(true, rpnButtonMerge(stkBtn, stkBtns))
+            return true
+        }
+        KbdState.stack.postCheck = KbdState.stack.preCheck
     }
 
     // get a list of lists of all buttons under the keyboard by
@@ -390,7 +402,7 @@ class MainActivity : AppCompatActivity(){
             button.setOnClickListener{
                 buttonClickHandler(it as Button, false)
             }
-            button.tag = RpnButton(key,
+            button.tag = RpnBtn(key,
                     button.text.toString(),
                     (if (button.tag == null) button.text else button.tag) as String
             )
@@ -511,94 +523,94 @@ class MainActivity : AppCompatActivity(){
                     .show()
         updateDisplay()
     }
-    private fun MutableList<RpnButton>.addButtonsToList(
+    private fun MutableList<RpnBtn>.addButtonsToList(
         vararg buttons : Any
-    ) : MutableList<RpnButton> {
-        val rv = mutableListOf<RpnButton>()
+    ) : MutableList<RpnBtn> {
+        val rv = mutableListOf<RpnBtn>()
         rv.addAll(this)
         rv.addAll(rpnButtonMerge(buttons))
         return rv
     }
-    private fun rpnButtonMerge(vararg buttons : Any) : List<RpnButton> {
-        val rv = mutableListOf<RpnButton>()
+    private fun rpnButtonMerge(vararg buttons : Any) : List<RpnBtn> {
+        val rv = mutableListOf<RpnBtn>()
         for (b in buttons) {
             when (b) {
-                is RpnButton -> rv.add(b)
+                is RpnBtn -> rv.add(b)
                 is List<*> -> {
-                    if (b.filter{it !is RpnButton}.isNotEmpty())
+                    if (b.filter{it !is RpnBtn}.isNotEmpty())
                         throw RuntimeException(
-                                "rpnButtonMerge is only for RpnButton or RpnButtonList")
-                    rv.addAll(b as List<RpnButton>)
+                                "rpnButtonMerge is only for RpnBtn or RpnButtonList")
+                    rv.addAll(b as List<RpnBtn>)
                 }
                 else -> throw RuntimeException(
-                    "rpnButtonMerge is only for RpnButton or RpnButtonList")
+                    "rpnButtonMerge is only for RpnBtn or RpnButtonList")
             }
         }
         return rv
     }
 
-    private val shftBtn = RpnButton(500, "⇳SHFT")
+    private val shftBtn = RpnBtn(500, "⇳SHFT")
 
-    private val degButton = RpnButton(100, "DEG")
-    private val radButton = RpnButton(100, "RAD")
-    private val trigButtons = listOf(
-        RpnButton(101, "SIN"), RpnButton(102, "COS"),
-        RpnButton(103, "TAN"),
+    private val degBtn = RpnBtn(100, "DEG")
+    private val radBtn = RpnBtn(100, "RAD")
+    private val trigBtns = listOf(
+        RpnBtn(101, "SIN"), RpnBtn(102, "COS"),
+        RpnBtn(103, "TAN"),
     )
-    private val arcTrigButtons = listOf(
-        RpnButton(101, "ASIN"), RpnButton(102, "ACOS"),
-        RpnButton(103, "ATAN"),
+    private val arcTrigBtns = listOf(
+        RpnBtn(101, "ASIN"), RpnBtn(102, "ACOS"),
+        RpnBtn(103, "ATAN"),
     )
-    private val piButton = RpnButton(2, "π")
-    private val expButton = RpnButton(1, "EXP")
-    private val operatorButtons = listOf(
-        RpnButton(4, "^"), RpnButton(104, "÷"),
-        RpnButton(204, "×"), RpnButton(304, "-"),
-        RpnButton(404, "+"),
+    private val piButton = RpnBtn(2, "π")
+    private val expButton = RpnBtn(1, "EXP")
+    private val operatorBtns = listOf(
+        RpnBtn(4, "^"), RpnBtn(104, "÷"),
+        RpnBtn(204, "×"), RpnBtn(304, "-"),
+        RpnBtn(404, "+"),
     )
-    private val regButton  = RpnButton(0, "REG")
-    private val regStoButton = RpnButton(1, "STO")
-    private val regClearButton = RpnButton(4, "CLR")
-    private val regRclButton =  RpnButton(2, "RCL")
+    private val regBtn  = RpnBtn(0, "REG")
+    private val regStoBtn = RpnBtn(1, "STO")
+    private val regClrBtn = RpnBtn(4, "CLR")
+    private val regRclButton =  RpnBtn(2, "RCL")
 
-    private val registerButtons = listOf(
-        regButton, regStoButton, regClearButton, regRclButton
+    private val regBtns = listOf(
+        regBtn, regStoBtn, regClrBtn, regRclButton
     )
-    private val stkBtn = RpnButton(0, "STK")
-    private val stkClrBtn = RpnButton(4, "CLR")
-    private val stkDropBtn = RpnButton(3, "DROP")
+    private val stkBtn = RpnBtn(0, "STK")
+    private val stkClrBtn = RpnBtn(4, "CLR")
+    private val stkDropBtn = RpnBtn(3, "DROP")
     private val stkBtns = listOf(
-        RpnButton(1, "DUP"),
-        RpnButton(2, "SWP"), stkDropBtn,
+        RpnBtn(1, "DUP"),
+        RpnBtn(2, "SWAP"), stkDropBtn,
         stkClrBtn,
     )
-    private val digitButtons = listOf(
-            RpnButton(201, "7"),
-            RpnButton(202, "8"),
-            RpnButton(203, "9"),
-            RpnButton(301, "4"),
-            RpnButton(302, "5"),
-            RpnButton(303, "6"),
-            RpnButton(401, "1"),
-            RpnButton(402, "2"),
-            RpnButton(403, "3"),
-            RpnButton(502, "0"),
+    private val digitBtns = listOf(
+            RpnBtn(201, "7"),
+            RpnBtn(202, "8"),
+            RpnBtn(203, "9"),
+            RpnBtn(301, "4"),
+            RpnBtn(302, "5"),
+            RpnBtn(303, "6"),
+            RpnBtn(401, "1"),
+            RpnBtn(402, "2"),
+            RpnBtn(403, "3"),
+            RpnBtn(502, "0"),
     )
-    private val decimalPointButton = RpnButton(501, ".")
-    private val chsButton = RpnButton(503, "+/-", "CHS")
-    private val numberPad = rpnButtonMerge(decimalPointButton, chsButton, digitButtons)
+    private val decimalPtBtn = RpnBtn(501, ".")
+    private val chsBtn = RpnBtn(503, "+/-", "CHS")
+    private val numberPad = rpnButtonMerge(decimalPtBtn, chsBtn, digitBtns)
 
-    private var delButton = RpnButton(3, "DEL")
+    private var delButton = RpnBtn(3, "DEL")
     private val shftUpBtns = rpnButtonMerge(
-            regButton, expButton, piButton, degButton, trigButtons, operatorButtons,
+            regBtn, expButton, piButton, degBtn, trigBtns, operatorBtns,
             numberPad,
     )
     private val shftDownBtns = rpnButtonMerge(
-            stkBtn, expButton, piButton, degButton, arcTrigButtons, operatorButtons,
+            stkBtn, expButton, piButton, degBtn, arcTrigBtns, operatorBtns,
             numberPad,
     )
     private fun setButton(
-        button: RpnButton,
+        button: RpnBtn,
         textColor: ColorStateList = white_text_color,
         textSize:Int = 18) {
         val b = buttonMap.getValue(button.buttonKey)
@@ -607,7 +619,7 @@ class MainActivity : AppCompatActivity(){
         b.setTextColor(textColor)
         b.textSize = textSize.toFloat()
     }
-    private fun setButtons(buttons:List<RpnButton>,
+    private fun setButtons(buttons:List<RpnBtn>,
         textColor: ColorStateList = white_text_color,
         textSize:Int = 18) {
         buttons.forEach{setButton(it, textColor, textSize)}
@@ -634,7 +646,7 @@ class MainActivity : AppCompatActivity(){
     }
     // enable/disable buttons using list of buttons.  If no list
     // is supplied, enable/disable all buttons.
-    private fun enableButton(enabled: Boolean = true, button: RpnButton) {
+    private fun enableButton(enabled: Boolean = true, button: RpnBtn) {
         val b = buttonMap[button.buttonKey]
         if (b != null) {
             b.isEnabled = enabled
@@ -646,7 +658,7 @@ class MainActivity : AppCompatActivity(){
         )
     }
     private fun enableButtons(
-        enabled:Boolean = true, buttons : List<RpnButton>? = null
+        enabled:Boolean = true, buttons : List<RpnBtn>? = null
     ) {
         if (buttons == null) {
             buttonMap.keys.forEach{
@@ -669,7 +681,7 @@ class MainActivity : AppCompatActivity(){
         }
 
         kbdState.preCheck(kbdState)
-        var buttonText = (button.tag as RpnButton).rpnToken
+        var buttonText = (button.tag as RpnBtn).rpnToken
         Log.d("kbdState", "$kbdState")
         when (buttonText) {
             "DEG" -> {
@@ -713,7 +725,7 @@ class MainActivity : AppCompatActivity(){
             "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "EXP" -> {
                 val containsExp = accumulator.contains("[\\d.]E".toRegex())
                 val containsDecimal = accumulator.contains(".")
-                enableButton(!containsDecimal && !containsExp, decimalPointButton)
+                enableButton(!containsDecimal && !containsExp, decimalPtBtn)
                 enableButton(false, delButton)
                 if (buttonText == "EXP" && containsExp) buttonText = ""
                 if (containsDecimal && buttonText == ".") buttonText = ""
@@ -764,27 +776,39 @@ class MainActivity : AppCompatActivity(){
                 }
                 else calculate(buttonText)
             }
-            "SWAP", "DUP", "ENTR" -> {
+            "SWAP", "DUP" -> {
                 calculate(buttonText)
+                popKbdState()
             }
             "STO", "RCL", "CLR" -> {
-                var a = accumulator
-                accumulator = ""
-                if (isLongClick && buttonText == "CLR")
+                if (kbdState == KbdState.register) {
+                    var a = accumulator
+                    accumulator = ""
                     a = "ALL"
-                // for now, parser puts reg values on stack.
-                else if (isLongClick && buttonText == "RCL") {
-                    a = "ALL"
+                    // for now, parser puts reg values on stack.
+                    if (isLongClick && buttonText == "RCL") {
+                        a = "ALL"
+                    }
+                    calculate("REG $a $buttonText")
                 }
-                calculate("REG $a $buttonText")
+                else if (kbdState == KbdState.stack) {
+                    rpnStack.clear();
+                    updateDisplay()
+                }
                 popKbdState()
             }
             "DROP" -> {
-                if (isLongClick) {
-                    rpnStack.clear()
-                    updateDisplay()
+                if (kbdState == KbdState.stack) {
+                    calculate("DROP")
+                    popKbdState()
                 }
-                else calculate("DROP")
+                else {
+                    if (isLongClick) {
+                        rpnStack.clear()
+                        updateDisplay()
+                    }
+                    else calculate("DROP")
+                }
             }
             "DEL" -> {
                     accumulator =   if (isLongClick) ""
@@ -794,6 +818,9 @@ class MainActivity : AppCompatActivity(){
             "SIN", "ASIN", "COS", "ACOS", "TAN", "ATAN" -> {
                 val angleUnits = if (angleIsDegrees) "DEG" else "RAD"
                 calculate("$angleUnits\n$buttonText")
+            }
+            "ENTR" -> {
+                calculate(buttonText)
             }
             else -> Log.d("btnOnClick", "$buttonText ignored")
         }
