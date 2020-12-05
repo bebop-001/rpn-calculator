@@ -246,11 +246,12 @@ class MainActivity : AppCompatActivity(){
                 }
         },
     }
+    // Initialize the KdbState enum methods here.  Needs to be here because some
+    // the values aren't initialized until the KdbState instance happens.
     private fun kbdStateInitialize() {
         KbdState.shiftUp.setup = fun(state:KbdState) : Boolean {
-            setButtons(shiftUpButtons)
+            setButtons(rpnButtonMerge(shftUpBtns, shftBtn))
             setButtons(rpnButtonMerge(expButton, piButton), orange_text_color)
-            enableButton(RpnParser.registers.size > 0, regButton)
             return state.preCheck(state)
         }
         KbdState.shiftUp.preCheck = fun(_:KbdState) : Boolean {
@@ -259,7 +260,6 @@ class MainActivity : AppCompatActivity(){
 
                 if (angleIsDegrees) setButton(delButton)
                 else setButton(radButton)
-                setButtons(trigButtons)
 
                 if (accumulator.isNotEmpty()) {
                     setButton(delButton)
@@ -271,7 +271,7 @@ class MainActivity : AppCompatActivity(){
                 }
                 else {
                     enableButton(false, expButton)
-                    setButton(dropButton)
+                    setButton(stkDropBtn)
                 }
             }
             else {
@@ -280,12 +280,40 @@ class MainActivity : AppCompatActivity(){
                 enableButton(true, piButton)
             }
             enableButton(
-                RpnParser.registers.size > 0 || accumulator.isNotEmpty(),
-                regButton)
+                    RpnParser.registers.size > 0 || accumulator.isNotEmpty(),
+                    regButton)
 
             return true
         }
         KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
+
+        KbdState.shiftDown.setup = fun(state:KbdState) : Boolean {
+            setButtons(shftDownBtns)
+            setButtons(rpnButtonMerge(shftBtn, stkBtn), red_text_color)
+            setButtons(rpnButtonMerge(expButton, piButton), orange_text_color)
+            return state.preCheck(state)
+        }
+        KbdState.shiftDown.preCheck = fun(_:KbdState) : Boolean {
+            enableButtons(accumulator.isNotEmpty() || rpnStack.isNotEmpty())
+            enableButtons(true, numberPad)
+            enableButton(rpnStack.isNotEmpty(), stkBtn)
+            if (angleIsDegrees) setButton(degButton)
+            else setButton(radButton)
+            if (accumulator.isNotEmpty()) {
+                setButton(delButton)
+                // block decimal if it's been pressed or you're in Exp mode.
+                val containsExp = accumulator.contains("[\\d.]E".toRegex())
+                val containsDecimal = accumulator.contains(".")
+                enableButton(!containsDecimal && !containsExp, decimalPointButton)
+                enableButton(!containsExp, expButton)
+            }
+            else {
+                enableButtons(false, rpnButtonMerge(expButton))
+                setButton(stkDropBtn, red_text_color)
+            }
+            return true
+        }
+        KbdState.shiftDown.postCheck = KbdState.shiftDown.preCheck
 
         KbdState.register.setup = fun(state:KbdState) : Boolean {
             setButtons(rpnButtonMerge(operatorButtons,registerButtons)
@@ -308,6 +336,7 @@ class MainActivity : AppCompatActivity(){
             enableButton(regIsNotEmpty || accIsNotEmpty,
                 regClearButton)
             enableButtons(true, rpnButtonMerge(regButton, digitButtons))
+            enableButton(false, shftBtn)
             return true
         }
         KbdState.register.postCheck = KbdState.register.preCheck
@@ -508,6 +537,8 @@ class MainActivity : AppCompatActivity(){
         return rv
     }
 
+    private val shftBtn = RpnButton(500, "⇳SHFT")
+
     private val degButton = RpnButton(100, "DEG")
     private val radButton = RpnButton(100, "RAD")
     private val trigButtons = listOf(
@@ -533,10 +564,13 @@ class MainActivity : AppCompatActivity(){
     private val registerButtons = listOf(
         regButton, regStoButton, regClearButton, regRclButton
     )
-    private val stackButtons = listOf(
-        RpnButton(0, "STK"), RpnButton(1, "DUP"),
-        RpnButton(2, "SWP"), RpnButton(3, "DROP"),
-        RpnButton(4, "CLR"),
+    private val stkBtn = RpnButton(0, "STK")
+    private val stkClrBtn = RpnButton(4, "CLR")
+    private val stkDropBtn = RpnButton(3, "DROP")
+    private val stkBtns = listOf(
+        RpnButton(1, "DUP"),
+        RpnButton(2, "SWP"), stkDropBtn,
+        stkClrBtn,
     )
     private val digitButtons = listOf(
             RpnButton(201, "7"),
@@ -555,10 +589,13 @@ class MainActivity : AppCompatActivity(){
     private val numberPad = rpnButtonMerge(decimalPointButton, chsButton, digitButtons)
 
     private var delButton = RpnButton(3, "DEL")
-    private var dropButton = RpnButton(3, "DROP")
-    private val shiftUpButtons = rpnButtonMerge(
-        regButton, expButton, piButton, degButton, operatorButtons,
-        numberPad,
+    private val shftUpBtns = rpnButtonMerge(
+            regButton, expButton, piButton, degButton, trigButtons, operatorButtons,
+            numberPad,
+    )
+    private val shftDownBtns = rpnButtonMerge(
+            stkBtn, expButton, piButton, degButton, arcTrigButtons, operatorButtons,
+            numberPad,
     )
     private fun setButton(
         button: RpnButton,
