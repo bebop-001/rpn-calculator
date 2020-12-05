@@ -249,7 +249,7 @@ class MainActivity : AppCompatActivity(){
     private fun kbdStateInitialize() {
         KbdState.shiftUp.setup = fun(state:KbdState) : Boolean {
             setButtons(shiftUpButtons)
-            setButtons(merge(expButton, piButton), orange_text_color)
+            setButtons(rpnButtonMerge(expButton, piButton), orange_text_color)
             enableButton(RpnParser.registers.size > 0, regButton)
             return state.preCheck(state)
         }
@@ -287,15 +287,8 @@ class MainActivity : AppCompatActivity(){
         }
         KbdState.shiftUp.postCheck = KbdState.shiftUp.preCheck
 
-        /*
-        fun List<List<RpnButton>>.merge() : List<RpnButton> {
-            val rv = mutableListOf<RpnButton>()
-            this.flatten().forEach{rv.add(it)}
-            return rv
-        }
-         */
         KbdState.register.setup = fun(state:KbdState) : Boolean {
-            setButtons(merge(operatorButtons,registerButtons)
+            setButtons(rpnButtonMerge(operatorButtons,registerButtons)
                     , green_text_color)
             return state.preCheck(state)
         }
@@ -304,9 +297,9 @@ class MainActivity : AppCompatActivity(){
             val regIsNotEmpty = RpnParser.registers.size > 0
             val accIsNotEmpty = accumulator.isNotEmpty()
             val stkIsNotEmpty = rpnStack.isNotEmpty()
-            enableButtons(false, merge(chsButton, decimalPointButton))
+            enableButtons(false, rpnButtonMerge(chsButton, decimalPointButton))
             enableButtons(accIsNotEmpty,
-                merge(registerButtons, delButton, regRclButton))
+                rpnButtonMerge(registerButtons, delButton, regRclButton))
             enableButton(regIsNotEmpty, regRclButton)
             enableButton(accIsNotEmpty && stkIsNotEmpty,
                     regStoButton)
@@ -314,7 +307,7 @@ class MainActivity : AppCompatActivity(){
                     operatorButtons)
             enableButton(regIsNotEmpty || accIsNotEmpty,
                 regClearButton)
-            enableButtons(true, merge(regButton, digitButtons))
+            enableButtons(true, rpnButtonMerge(regButton, digitButtons))
             return true
         }
         KbdState.register.postCheck = KbdState.register.preCheck
@@ -489,15 +482,15 @@ class MainActivity : AppCompatActivity(){
                     .show()
         updateDisplay()
     }
-    private fun MutableList<RpnButton>._addAll(
+    private fun MutableList<RpnButton>.addButtonsToList(
         vararg buttons : Any
     ) : MutableList<RpnButton> {
         val rv = mutableListOf<RpnButton>()
         rv.addAll(this)
-        rv.addAll(merge(buttons))
+        rv.addAll(rpnButtonMerge(buttons))
         return rv
     }
-    private fun merge(vararg buttons : Any) : List<RpnButton> {
+    private fun rpnButtonMerge(vararg buttons : Any) : List<RpnButton> {
         val rv = mutableListOf<RpnButton>()
         for (b in buttons) {
             when (b) {
@@ -505,11 +498,11 @@ class MainActivity : AppCompatActivity(){
                 is List<*> -> {
                     if (b.filter{it !is RpnButton}.isNotEmpty())
                         throw RuntimeException(
-                                "Merge is only for RpnButton or RpnButtonList")
+                                "rpnButtonMerge is only for RpnButton or RpnButtonList")
                     rv.addAll(b as List<RpnButton>)
                 }
                 else -> throw RuntimeException(
-                    "Merge is only for RpnButton or RpnButtonList")
+                    "rpnButtonMerge is only for RpnButton or RpnButtonList")
             }
         }
         return rv
@@ -559,11 +552,11 @@ class MainActivity : AppCompatActivity(){
     )
     private val decimalPointButton = RpnButton(501, ".")
     private val chsButton = RpnButton(503, "+/-", "CHS")
-    private val numberPad = merge(decimalPointButton, chsButton, digitButtons)
+    private val numberPad = rpnButtonMerge(decimalPointButton, chsButton, digitButtons)
 
     private var delButton = RpnButton(3, "DEL")
     private var dropButton = RpnButton(3, "DROP")
-    private val shiftUpButtons = merge(
+    private val shiftUpButtons = rpnButtonMerge(
         regButton, expButton, piButton, degButton, operatorButtons,
         numberPad,
     )
