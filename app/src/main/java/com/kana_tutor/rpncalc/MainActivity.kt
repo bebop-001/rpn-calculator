@@ -282,6 +282,7 @@ class MainActivity : AppCompatActivity(){
             enableButton(
                     RpnParser.registers.size > 0 || accumulator.isNotEmpty(),
                     regBtn)
+            enableButton(true, shftBtn)
 
             return true
         }
@@ -311,6 +312,7 @@ class MainActivity : AppCompatActivity(){
                 enableButtons(false, rpnBtnMerge(expBtn))
                 setButton(stkDropBtn)
             }
+            enableButton(true, shftBtn)
             return true
         }
         KbdState.shiftDown.postCheck = KbdState.shiftDown.preCheck
