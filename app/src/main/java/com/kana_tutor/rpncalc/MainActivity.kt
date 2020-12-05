@@ -1,4 +1,4 @@
-@file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName", "PrivatePropertyName", "EnumEntryName", "FunctionName", "UNCHECKED_CAST")
+git @file:Suppress("unused", "unused", "unused", "ObjectPropertyName", "SetTextI18n", "LocalVariableName", "PrivatePropertyName", "EnumEntryName", "FunctionName", "UNCHECKED_CAST")
 
 package com.kana_tutor.rpncalc
 
