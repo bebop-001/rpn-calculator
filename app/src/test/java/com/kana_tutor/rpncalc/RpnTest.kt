@@ -130,6 +130,8 @@ fun testMathOpps() :Pair<Int,Int>{
     return Pair(totalTests, testsPassed)
 }
 fun testStackOpps() :Pair<Int,Int>{
+    // set format for remainder of tests.
+    rpnCalculate("format:fixed:on:2 FORMAT STO".toRpnStack())
     var totalTests = 0
     var testsPassed = 0
 
@@ -161,6 +163,8 @@ fun testStackOpps() :Pair<Int,Int>{
     return Pair(totalTests, testsPassed)
 }
 fun testRegOps() :Pair<Int,Int>{
+    // set format for remainder of tests.
+    rpnCalculate("format:fixed:on:2 FORMAT STO".toRpnStack())
     var totalTests = 0
     var testsPassed = 0
     RpnParser.registers.clear()
@@ -182,7 +186,7 @@ fun testRegOps() :Pair<Int,Int>{
     ) testsPassed++
     totalTests++
     if (printResult("777 888 REG 2 STO 123 REG 99 STO REG ALL RCL 999",
-                    "[777.00:777.0, REG=2:888.0, REG=99:123.0, 999.00:999.0]",
+                    "[777.00:777.0, REG=2              888.0:888.0, REG=99             123.0:123.0, 999.00:999.0]",
                     "")
     ) testsPassed++
     totalTests++
@@ -209,25 +213,27 @@ fun testRegOps() :Pair<Int,Int>{
     return Pair(totalTests, testsPassed)
 }
 fun saveAndRestoreRegisters() :Pair<Int,Int>{
+    // set format for remainder of tests.
+    rpnCalculate("format:fixed:on:2 FORMAT STO".toRpnStack())
     var totalTests = 0
     var testsPassed = 0
     RpnParser.registers.clear()
 
     totalTests++
     if (printResult("777 888 REG 2 STO 123 REG 99 STO 27 REG 27 STO REG ALL STORABLE 999",
-    "[777.00:777.0, STORABLE:zc3tr19uvojk:-1:REG=2:NaN, STORABLE:z5w0yevhfk00:-1:REG=27:NaN, STORABLE:z8n3w9eryebk:-1:REG=99:NaN, 999.00:999.0]",
+    "[777.00:777.0, STORABLE:zc3tr19uvojk:2:REG=2:NaN, STORABLE:z5w0yevhfk00:27:REG=27:NaN, STORABLE:z8n3w9eryebk:99:REG=99:NaN, 999.00:999.0]",
     "")
     ) testsPassed++
     totalTests++
     if (printResult("8888 REG ALL CLR STORABLE:z5w0yevhfk00:27 " +
                     "STORABLE:z8n3w9eryebk:99 STORABLE:zc3tr19uvojk:2 REG ALL RCL 9999",
-                    "[8,888.00:8888.0, REG=2:888.0, REG=27:27.0, REG=99:123.0, 9,999.00:9999.0]",
+                    "[8,888.00:8888.0, REG=2              888.0:888.0, REG=27              27.0:27.0, REG=99             123.0:123.0, 9,999.00:9999.0]",
                     "")
     ) testsPassed++
     totalTests++
     if (printResult("8888 REG ALL CLR STORABLE:z5w0yevhfk00:27 " +
                     "STORABLE:z8n3w9eryebk:99 STORABLE:zc3tr19uvojk:2 REG ALL RCL 9999",
-                    "[8,888.00:8888.0, REG=2:888.0, REG=27:27.0, REG=99:123.0, 9,999.00:9999.0]",
+                    "[8,888.00:8888.0, REG=2              888.0:888.0, REG=27              27.0:27.0, REG=99             123.0:123.0, 9,999.00:9999.0]",
                     "")
     ) testsPassed++
     totalTests++

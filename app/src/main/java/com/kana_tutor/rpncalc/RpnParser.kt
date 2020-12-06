@@ -261,12 +261,12 @@ class RpnParser private constructor() {
                             }
                             else if (v1.token == "STORABLE") {
                                 if (v2.token == "ALL") {
-                                    registers.keys.sorted().forEach{
-                                        outStack.add(registers[it]!!.toStorable())
+                                    registers.keys.sorted().forEach{key ->
+                                        outStack.add(registers[key]!!.toStorable(key))
                                     }
                                 }
                                 else if (v2.isIndex()!!) {
-                                    outStack.add(registers[v2.value.toInt()]!!.toStorable())
+                                    outStack.add(registers[v2.value.toInt()]!!.toStorable(-1))
                                 }
                             }
                             else rpnError = "REG: ${v1.token} unexpected token."
@@ -287,7 +287,7 @@ class RpnParser private constructor() {
                             val v1 = outStack.rmLast()!!
                             if (current.token == "STORABLE" && v1.token == "ALL") {
                                 for(i in outStack.indices)
-                                    outStack[i] = outStack[i].toStorable()
+                                    outStack[i] = outStack[i].toStorable(-1)
                             }
                             else if (outStack.size >= 1) {
                                 val v2 = outStack.rmLast()!!

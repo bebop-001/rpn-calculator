@@ -98,7 +98,7 @@ data class RpnToken(var token: String, var value : Double = java.lang.Double.NaN
             }
             return rv
         }
-        fun RpnToken.toStorable(index:Int=-1) : RpnToken {
+        fun RpnToken.toStorable(index:Int) : RpnToken {
             val longBits = value.toLongBitsString()
             return RpnToken("STORABLE:$longBits:$index:$token")
         }
