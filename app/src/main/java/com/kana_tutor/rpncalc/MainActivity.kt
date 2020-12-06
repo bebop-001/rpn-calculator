@@ -116,14 +116,9 @@ class MainActivity : AppCompatActivity(){
             Log.d("restoreRegisters", "file $registersFile not found.")
         else {
             val registersAsString = registersFile.readText()
-            val stackOut = registersAsString.toRpnStack()
-            Log.d("restoreRegisters", "$stackOut")
-
-            /*
-            val (errors, stack) = RpnParser.rpnCalculate(registersAsString.toRpnStack())
-            Log.d("restoreRegisters", "$errors")
-
-             */
+            val (stack, errors) = RpnParser.rpnCalculate(registersAsString.toRpnStack())
+            if (errors.isNotEmpty())
+                Log.d("restoreRegisters", "Errors:$errors")
         }
     }
 
