@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.kana_tutor.rpncalc.kanautils.*
 
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
+import com.kana_tutor.rpncalc.RpnToken.Companion.toStorable
 import java.io.File
 
 private const val blue_text_default       = 0xff00acc1.toInt()
@@ -66,59 +67,38 @@ class MainActivity : AppCompatActivity(){
     private var numberFormattingEnabled = true
     private var menuNumberFormatString = R.string.number_formatting_enabled
 
-    fun displayStoredValues() {
-        /*
-        val sortedKeys = RpnParser.registers.keys.sorted()
-        val mess =
-                if (sortedKeys.isEmpty()) "Empty"
-                else sortedKeys
-                    .map { "%2d) %s".format(
-                        it, RpnParser.registers[it]!!.toFormattedString()
-                    )}
-                    .joinToString("\n")
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.register_contents)
-            .setNegativeButton(R.string.done, { d, i ->
-                d.cancel()
-            })
-            .setPositiveButton(R.string.clear_registers, { d, i ->
-                RpnParser.clearRegisters()
-                d.cancel()
-            })
-            .setMessage(mess)
-            .show()
-        var tv  = dialog.findViewById<TextView>(android.R.id.message)!!
-        tv.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
-
-         */
-    }
-    private fun saveRegisters() {
-        val (stack, errors) = RpnParser.rpnCalculate("REG ALL STORABLE".toRpnStack())
+    private fun saveRegAndStack() {
+        val (stack, errors) =
+                RpnParser.rpnCalculate("REG ALL STORABLE".toRpnStack())
         if (errors.isNotEmpty())
             throw java.lang.RuntimeException(
                     "errors occured while restoring registers:$errors")
-        val toStore = stack.map{it.toString()}.joinToString("\n")
+        var toStore = stack.map{it.toString()}.joinToString("\n")
+        toStore += "\n" + rpnStack
+                .map{it.toStorable(-1).toString()}
+                .joinToString("\n")
         val registersDir = File("${getFilesDir()}/data")
         if (!registersDir.exists() && !registersDir.mkdir())
             throw java.lang.RuntimeException(
-                    "saveRegisters: directory ${registersDir}\n" +
+                    "saveRegAndStack: directory ${registersDir}\n" +
                             "doesn't exist and mkdir FAILED>")
         val registersFile = File(registersDir, "registers.txt")
         try { registersFile.writeText(toStore) }
         catch (e:java.lang.Exception) {
-            throw RuntimeException("saveRegisters write $registersFile FAILED")
+            throw RuntimeException("saveRegAndStack write $registersFile FAILED")
         }
     }
-    private fun restoreRegisters() {
+    private fun restoreRegAndStack() {
         val registersDir = File("${getFilesDir()}/data")
         val registersFile = File(registersDir, "registers.txt")
         if (!registersFile.exists())
-            Log.d("restoreRegisters", "file $registersFile not found.")
+            Log.d("restoreRegAndStack", "file $registersFile not found.")
         else {
             val registersAsString = registersFile.readText()
             val (stack, errors) = RpnParser.rpnCalculate(registersAsString.toRpnStack())
             if (errors.isNotEmpty())
-                Log.d("restoreRegisters", "Errors:$errors")
+                Log.d("restoreRegAndStack", "Errors:$errors")
+            rpnStack = stack
         }
     }
 
@@ -423,7 +403,7 @@ class MainActivity : AppCompatActivity(){
         // by default, only the number pad is enabled.
         enableButtons(true, numberPad)
 
-        restoreRegisters()
+        restoreRegAndStack()
         // this where things get started.
         // restore the keyboard state.
         with (sharedPreferences) {
@@ -445,7 +425,7 @@ class MainActivity : AppCompatActivity(){
 
     override fun onPause() {
         super.onPause()
-        saveRegisters()
+        saveRegAndStack()
         kbdStateStack.clear()
         sharedPreferences.edit()
             .putBoolean("angleIsDegrees", angleIsDegrees)
