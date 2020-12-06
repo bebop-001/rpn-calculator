@@ -29,12 +29,14 @@ fun printResult(
         println("test $testId \"$rpnString\" PASSED")
     else {
         println("test $testId \"$rpnString\" FAILED")
-        if (stackFailed) println (
-            "\tSack differed:\n" +
-            "\t\tExpected \"$expectedStack\" vs \"$stackAsStr\"")
-        if (errorsFailed) println (
-            "\tErrors differed:\n" +
-            "\t\tExpected \"$expectedErrors\" vs \"$errors\"")
+        if (stackFailed) print (
+            "    %s:\n\t > \"%s\"\n\t < \"%s\"\n".format(
+                  "Sack differed", expectedStack, stackAsStr
+            ))
+        if (errorsFailed) print (
+            "    %s:\n\t > \"%s\"\n\t < \"%s\"\n".format(
+                    "Errors differed", expectedErrors, errors
+            ))
     }
     testId++
     return passed
@@ -268,11 +270,15 @@ fun main(args: Array<String>) {
         exit(1)
     }
     var testNumber = 0
-    try {testNumber = args[0].toInt()}
-    catch (e:RuntimeException) {
-        sb.append("${args[0]}: $e")
-        System.err.println(sb.toString())
-        exit(1)
+    if (args.size > 0) {
+        try {
+            testNumber = args[0].toInt()
+        }
+        catch (e: RuntimeException) {
+            sb.append("${args[0]}: $e")
+            System.err.println(sb.toString())
+            exit(1)
+        }
     }
     if (testNumber > 0) {
         val (testString, testFunction) = tests[testNumber]
