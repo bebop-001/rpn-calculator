@@ -2,6 +2,9 @@ package com.kana_tutor.rpncalc
 
 import com.kana_tutor.rpncalc.RpnParser.Companion.rpnCalculate
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
+import java.lang.RuntimeException
+import java.lang.StringBuilder
+import java.lang.System.exit
 
 
 var testId = 1
@@ -248,15 +251,40 @@ val tests =
             Pair("test save and restore registers", ::saveAndRestoreRegisters),
 )
 
-fun main(@Suppress("UNUSED_PARAMETER") args: Array<String>) {
+fun main(args: Array<String>) {
+    // Build a usage string.
+    val sb = StringBuilder()
+            .append("Usage: RpnTestKt indexForTest\n")
+            .append("Valid Tests:\n")
+    tests.indices.map{
+        sb.append("%2d) %s\n".format(it, tests[it].first))
+    }
+
     var totalTests = 0
     var testsPassed = 0
     var testSets = 1
-
+    if (args.size > 0 && args.size != 1) {
+        System.err.println(sb.toString())
+        exit(1)
+    }
+    var testNumber = 0
+    try {testNumber = args[0].toInt()}
+    catch (e:RuntimeException) {
+        sb.append("${args[0]}: $e")
+        System.err.println(sb.toString())
+        exit(1)
+    }
+    if (testNumber > 0) {
+        val (testString, testFunction) = tests[testNumber]
+        println("============= test set ${testNumber}: $testString")
+        val (total, passed) = testFunction()
+        println("\t$passed of $total PASSED")
+        exit(0)
+    }
     for ((testString, testFunction) in tests) {
         println("============= test set ${testSets++}: $testString")
         val (total, passed) = testFunction()
-        println("\t$total of $passed PASSED")
+        println("\t$passed of $total PASSED")
 
         totalTests += total; testsPassed += passed
     }

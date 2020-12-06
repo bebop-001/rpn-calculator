@@ -241,7 +241,6 @@ class RpnParser private constructor() {
                                         stk.add(t2)
                                     }
                                     outStack.addAll(stk)
-                                    Log.d("x", "X")
                                 }
                                 else rpnError = "REG ${v2.token} RCL: ${v2.token} not an index"
                             }
