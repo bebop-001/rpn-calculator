@@ -7,6 +7,7 @@ import java.lang.StringBuilder
 import java.lang.System.exit
 
 class ConversionTest {
+    val conversions = Conversions.getInstance()
     var testId = 1
     fun printResult(
         rpnString: String, expectedStack: String, expectedErrors: String,
@@ -55,50 +56,53 @@ class ConversionTest {
                      */
             )
 
-    fun main(args: Array<String>) {
-        // Build a usage string.
-        val sb = StringBuilder()
-                .append("Usage: RpnTestKt indexForTest\n")
-                .append("Valid Tests:\n")
-        tests.indices.map {
-            sb.append("%2d) %s\n".format(it, tests[it].first))
-        }
 
-        var totalTests = 0
-        var testsPassed = 0
-        var testSets = 1
-        if (args.size > 0 && args.size != 1) {
+}
+fun main(args: Array<String>) {
+    val conversionTest = ConversionTest()
+    with (conversionTest) {
+    // Build a usage string.
+    val sb = StringBuilder()
+            .append("Usage: RpnTestKt indexForTest\n")
+            .append("Valid Tests:\n")
+    tests.indices.map {
+        sb.append("%2d) %s\n".format(it, tests[it].first))
+    }
+
+    var totalTests = 0
+    var testsPassed = 0
+    var testSets = 1
+    if (args.size > 0 && args.size != 1) {
+        System.err.println(sb.toString())
+        exit(1)
+    }
+    var testNumber = 0
+    if (args.size > 0) {
+        try {
+            testNumber = args[0].toInt()
+        }
+        catch (e: RuntimeException) {
+            sb.append("${args[0]}: $e")
             System.err.println(sb.toString())
             exit(1)
         }
-        var testNumber = 0
-        if (args.size > 0) {
-            try {
-                testNumber = args[0].toInt()
-            }
-            catch (e: RuntimeException) {
-                sb.append("${args[0]}: $e")
-                System.err.println(sb.toString())
-                exit(1)
-            }
-        }
-        if (testNumber > 0) {
-            val (testString, testFunction) = tests[testNumber]
-            println("============= test set ${testNumber}: $testString")
-            val (total, passed) = testFunction()
-            println("\t$passed of $total PASSED")
-            exit(0)
-        }
-        for ((testString, testFunction) in tests) {
-            println("============= test set ${testSets++}: $testString")
-            val (total, passed) = testFunction()
-            println("\t$passed of $total PASSED")
-
-            totalTests += total; testsPassed += passed
-        }
-        println("passed $testsPassed of $totalTests: " +
-                "%.2f".format(testsPassed / totalTests.toDouble() * 100.0) +
-                "%")
     }
+    if (testNumber > 0) {
+        val (testString, testFunction) = tests[testNumber]
+        println("============= test set ${testNumber}: $testString")
+        val (total, passed) = testFunction()
+        println("\t$passed of $total PASSED")
+        exit(0)
+    }
+    for ((testString, testFunction) in tests) {
+        println("============= test set ${testSets++}: $testString")
+        val (total, passed) = testFunction()
+        println("\t$passed of $total PASSED")
 
+        totalTests += total; testsPassed += passed
+    }
+    println("passed $testsPassed of $totalTests: " +
+            "%.2f".format(testsPassed / totalTests.toDouble() * 100.0) +
+            "%")
+}
 }
