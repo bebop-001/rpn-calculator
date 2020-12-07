@@ -79,8 +79,10 @@ class Conversions private constructor(){
                 "mtr", "1 *", "1 *")
     }
 
-    private val myInstance = Conversions()
-    fun getInstance() : Conversions {
-        return myInstance
+    companion object {
+        private val myInstance = Conversions()
+        fun getInstance(): Conversions {
+            return myInstance
+        }
     }
 }
