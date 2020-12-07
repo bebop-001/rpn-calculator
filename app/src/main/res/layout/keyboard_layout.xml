@@ -13,137 +13,116 @@
         <LinearLayout
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
-            <Button
-                android:id="@+id/reg_stk_button"
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="REG" />
-            <Button
-                android:id="@+id/deg_rad_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="DEG" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="?" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="?" />
-            <Button
-                android:id="@+id/sto_rcl_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="?" />
-            <Button
-                android:id="@+id/shift_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:textSize="16sp"
-                android:text="⇳SHFT" />
+                />
         </LinearLayout>
         <!-- Column 2 -->
         <LinearLayout
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
 
-            <Button
-                android:id="@+id/exp_button"
-                android:tag="E"
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="EXP"
-                android:textColor="@color/orange_text_color" />
-            <Button
-                android:id="@+id/sine_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="SIN" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="7" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="4" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="1" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="." />
+                />
         </LinearLayout>
         <!-- Column 3 -->
         <LinearLayout
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
-            <Button
-                android:id="@+id/pi_button"
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="π"
-                android:textColor="@color/orange_text_color" />
-            <Button
-                android:id="@+id/cosine_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="COS" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="8" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="5" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="2" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="0" />
+                />
         </LinearLayout>
         <!-- Column 4 -->
         <LinearLayout
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
-            <Button
-                android:id="@+id/del_clr_button"
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="DEL" />
-            <Button
-                android:id="@+id/tangent_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="TAN" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="9" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="6" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:text="3" />
-            <Button
-                android:id="@+id/chs_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/number_button"
-                android:tag="CHS"
-                android:text="+/-" />
+                />
         </LinearLayout>
         <!-- Column 5 -->
         <LinearLayout
             style="@style/layoutButtonGroup"
             android:layout_height="wrap_content">
-            <Button
-                android:id="@+id/pow_button"
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/math_op_button"
-                android:text="^" />
-            <Button
-                android:id="@+id/div_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/math_op_button"
-                android:text="÷" />
-            <Button
-                android:id="@+id/mult_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/math_op_button"
-                android:text="×" />
-            <Button
-                android:id="@+id/minus_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/math_op_button"
-                android:text="-" />
-            <Button
-                android:id="@+id/plus_button"
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/math_op_button"
-                android:text="+" />
-            <Button
+                />
+            <androidx.emoji.widget.EmojiAppCompatButton
                 style="@style/operation_button"
-                android:text="ENTR" />
+                />
         </LinearLayout>
 </LinearLayout>

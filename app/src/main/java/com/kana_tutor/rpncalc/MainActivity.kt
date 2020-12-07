@@ -15,6 +15,8 @@ import android.widget.*
 import android.widget.ScrollView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.emoji.bundled.BundledEmojiCompatConfig
+import androidx.emoji.text.EmojiCompat
 import com.kana_tutor.rpncalc.kanautils.*
 
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
@@ -111,10 +113,11 @@ class MainActivity : AppCompatActivity(){
     private var rpnStack = RpnStack()
     private var accumulator = ""
 
-    private data class RpnBtn(
+    private data class RpnBtn (
         val buttonKey : Int,
         val text:String,
         val rpnToken : String = text,
+        val textSize:Int = 18
     )
     private class RpnButtons {
         val buttons = mutableListOf<RpnBtn>()
@@ -352,6 +355,10 @@ class MainActivity : AppCompatActivity(){
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        EmojiCompat.init(
+                BundledEmojiCompatConfig(applicationContext))
+
         setContentView(R.layout.activity_main)
         _sharedPreferences = getSharedPreferences(
                 "user_prefs.txt", MODE_PRIVATE)
@@ -438,6 +445,7 @@ class MainActivity : AppCompatActivity(){
 
     // used to return result of context menu operation
     // set in onCreateContextMenu, used/cleared in onContextItemSelected
+    /*
     private var returnResult: ((String) -> Unit)? = null
     override fun onContextItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
@@ -450,7 +458,9 @@ class MainActivity : AppCompatActivity(){
         returnResult = null
         return true
     }
+     */
 
+    /*
     override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenuInfo?) {
         super.onCreateContextMenu(menu, v, menuInfo)
         val buttonText =
@@ -470,6 +480,7 @@ class MainActivity : AppCompatActivity(){
         openContextMenu(view)
         returnResult = toReturn // to return the result of the operation.
     }
+     */
     private fun updateDisplay() {
         panel_text_view.text = rpnStack.joinToString("\n")
         { it.token } + "\n" + accumulator
@@ -521,7 +532,7 @@ class MainActivity : AppCompatActivity(){
         return rv
     }
 
-    private val shftBtn = RpnBtn(500, "⇳SHFT")
+    private val shftBtn = RpnBtn(500, "SHFT", "SHFT", 16)
 
     private val degBtn = RpnBtn(100, "DEG")
     private val radBtn = RpnBtn(100, "RAD")
@@ -536,9 +547,11 @@ class MainActivity : AppCompatActivity(){
     private val piBtn = RpnBtn(2, "π")
     private val expBtn = RpnBtn(1, "EXP")
     private val operatorBtns = listOf(
-        RpnBtn(4, "^"), RpnBtn(104, "÷"),
-        RpnBtn(204, "×"), RpnBtn(304, "-"),
-        RpnBtn(404, "+"),
+        RpnBtn(4, "^", textSize = 26),
+        RpnBtn(104, "÷", textSize = 26),
+        RpnBtn(204, "×", textSize = 26),
+        RpnBtn(304, "-", textSize = 26),
+        RpnBtn(404, "+", textSize = 26),
     )
     private val regBtn  = RpnBtn(0, "REG")
     private val regStoBtn = RpnBtn(1, "STO")
@@ -551,9 +564,10 @@ class MainActivity : AppCompatActivity(){
     private val stkBtn = RpnBtn(0, "STK")
     private val stkClrBtn = RpnBtn(4, "CLR")
     private val stkDropBtn = RpnBtn(3, "DROP")
+    private val swpBtn = RpnBtn(2, "SWAP", "SWAP", 16)
     private val stkBtns = listOf(
         RpnBtn(1, "DUP"),
-        RpnBtn(2, "SWAP"), stkDropBtn,
+            swpBtn, stkDropBtn,
         stkClrBtn,
     )
     private val digitBtns = listOf(
@@ -569,32 +583,31 @@ class MainActivity : AppCompatActivity(){
             RpnBtn(502, "0"),
     )
     private val decimalPtBtn = RpnBtn(501, ".")
-    private val chsBtn = RpnBtn(503, "+/-", "CHS")
+    private val chsBtn = RpnBtn(503, "+/-", "CHS", textSize = 26)
+    private val entrBtn = RpnBtn(504, "ENTR", "ENTR", 16)
     private val numberPad = rpnBtnMerge(decimalPtBtn, chsBtn, digitBtns)
 
     private var delBtn = RpnBtn(3, "DEL")
-    private val shftUpBtns = rpnBtnMerge(
+
+    private val shftBtns = rpnBtnMerge(
             regBtn, expBtn, piBtn, degBtn, trigBtns, operatorBtns,
-            numberPad,
+            numberPad, entrBtn,
     )
-    private val shftDownBtns = rpnBtnMerge(
-            stkBtn, expBtn, piBtn, degBtn, arcTrigBtns, operatorBtns,
-            numberPad,
-    )
+    private val shftUpBtns = rpnBtnMerge(shftBtns, trigBtns)
+    private val shftDownBtns = rpnBtnMerge(shftBtns, arcTrigBtns)
+
     private fun setButton(
         button: RpnBtn,
-        textColor: ColorStateList = white_text_color,
-        textSize:Int = 18) {
+        textColor: ColorStateList = white_text_color) {
         val b = buttonMap.getValue(button.buttonKey)
         b.text = button.text
         b.tag = button
         b.setTextColor(textColor)
-        b.textSize = textSize.toFloat()
+        b.textSize = button.textSize.toFloat()
     }
     private fun setButtons(buttons:List<RpnBtn>,
-        textColor: ColorStateList = white_text_color,
-        textSize:Int = 18) {
-        buttons.forEach{setButton(it, textColor, textSize)}
+        textColor: ColorStateList = white_text_color) {
+        buttons.forEach{setButton(it, textColor)}
     }
     // saved/restored by system.
     private lateinit var kbdState : KbdState
@@ -674,7 +687,7 @@ class MainActivity : AppCompatActivity(){
                         .putBoolean("angleIsDegrees", angleIsDegrees)
                         .apply()
             }
-            "⇳SHFT" -> {
+            "SHFT" -> {
                 pushKbdState(
                         if (kbdState == KbdState.shiftUp) KbdState.shiftDown
                         else KbdState.shiftUp
@@ -738,6 +751,7 @@ class MainActivity : AppCompatActivity(){
                         }
                     }
                 }
+                else if(rpnStack.isNotEmpty()) calculate("CHS")
             }
             "+", "-", "×", "÷", "^" -> {
                 if (kbdState == KbdState.register) {
