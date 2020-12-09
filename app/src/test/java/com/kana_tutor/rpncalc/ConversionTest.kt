@@ -77,25 +77,25 @@ object ConversionTest {
     fun testSelected() : Boolean {
         var totalTests = 0
         var testsPassed = 0
-        data class Test (val type:String, val to:String, val from:String, val testVal : String, val expected:String)
+        data class Test (val type:String, val from:String, val to:String, val testVal : String, val expected:String)
         val tests = listOf(
-                Test("dst", "mi", "AU", "1","92955807"),
-                Test("dst", "mi", "LY", "1","5.8786254E12"),
-                Test("dst", "mi", "ft", "5280","1"),
-                Test("dst", "in", "ft", "1","12")
+            Test("dst", "ft", "in", "1","12"),
+            Test("dst", "AU", "mi", "1","92955807"),
+            Test("dst", "LY", "mi", "1","5.8786254E12"),
+            Test("dst", "ft", "mi", "5280","1"),
         )
         for (test in tests) {
             totalTests++
             val (type, to, from, testVal, expected) = test
             val cnvt = Conversions.getFromTo(type, from, to)
             if (cnvt != null) {
-                val (toCnvt, fromCnvt) = cnvt
+                val (fromCnvt, toCnvt) = cnvt
                 var testStr = "$testVal $toCnvt $fromCnvt"
                 // val testStr = "format:fixed:on:5 FORMAT STO $expected $testVal $toCnvt $fromCnvt"
                 // println("test string:$testStr")
                 var (rpnStack, errors) = rpnCalculate(testStr.toRpnStack())
                 if (errors.isNotEmpty())
-                    println("test $totalTests: $type:$to:$from Error: $errors")
+                    println("test $totalTests: $type:$from:$to Error: $errors")
                 println("testSelected:test $totalTests:$test: PctDiff:${"%.5f".format(rpnStack[0].value)}%")
                 val expt = expected.toDouble()
                 val result = rpnStack[0].value
@@ -103,10 +103,10 @@ object ConversionTest {
                 if (pctDiff < 10E-7) {
                     if (pctDiff != 0.0)
                         println("pct diff:%1.2e%%".format(pctDiff))
-                    println("test $totalTests $type:$to:$from PASSED")
+                    println("test $totalTests $type:$from:$to PASSED")
                     testsPassed++
                 }
-                else println("test $totalTests $type:$to:$from FAILED.\n" +
+                else println("test $totalTests $type:$from:$to FAILED.\n" +
                     "expecred $expected, received $result")
             }
         }
