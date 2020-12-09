@@ -8,9 +8,9 @@ object Conversions {
         val name: String,
             // for completeness.
         val description: String,
-            // mtr or ft for example.
+            // m or ft for example.
         val tag: String,
-            // gram for weight or cmtr for example
+            // gram for weight or cm for example
     )
 
     class UnitInstance(
@@ -18,12 +18,12 @@ object Conversions {
         name: String,
         description: String,
         tag: String,
-            // gram for weight or cmtr for example
+            // gram for weight or cm for example
         val base: String,
             // this contains string RPN code to convert to/from this instance.
             // conversion is accomplished by "Chaining" conversions, so
             // the conversion from feet to nextInstance will be
-            // ft -> cmtr, cmtr -> in
+            // ft -> cm, cm -> in
         val toBase: String,
         val fromBase: String,
     ) : Unit(name, description, tag)
@@ -69,29 +69,29 @@ object Conversions {
 
             UnitType("Distance", "", "dst"),
             UnitInstance("dst", "Foot",
-				 "", "ft", "mtr", "0.3048 /", "0.3048 *"),
+				 "", "ft", "m", "0.3048 /", "0.3048 *"),
             UnitInstance("dst", "Inch",
-				 "", "in", "mtr", "0.0254 /", "0.0254 *"),
+				 "", "in", "m", "0.0254 /", "0.0254 *"),
             UnitInstance("dst", "Yard",
-				 "", "yd", "mtr", "0.9144 /", "0.9144 *"),
+				 "", "yd", "m", "0.9144 /", "0.9144 *"),
             UnitInstance("dst", "Mile",
-				 "", "mi", "mtr", "1609.344 /", "1609.344 *"),
+				 "", "mi", "m", "1609.344 /", "1609.344 *"),
             UnitInstance("dst", "Nautical Mile",
-				 "", "Nmi", "mtr", "1852 /", "1852 *"),
+				 "", "Nmi", "m", "1852 /", "1852 *"),
             UnitInstance("dst", "Astronomical Unit",
-                    "", "AU", "mtr", "149597871E3 /", "149597871E3 *"),
+                    "", "AU", "m", "149597871E3 /", "149597871E3 *"),
             UnitInstance("dst", "Light Years",
-                    "", "LY", "mtr", "9.4607305e15 /", "9.4607305e15 *"),
+                    "", "LY", "m", "9.4607305e15 /", "9.4607305e15 *"),
             UnitInstance("dst", "Furlong (US)",
-				 "", "fur", "mtr", "201.168 /", "201.168 *"),
+				 "", "fur", "m", "201.168 /", "201.168 *"),
             UnitInstance("dst", "Centimeter",
-				 "", "cmtr", "mtr", "1E2 /", "1E2 *"),
+				 "", "cm", "m", "1E2 /", "1E2 *"),
             UnitInstance("dst", "Kilometer",
-				 "", "kmtr", "mtr", "1E3 *", "1E3 /"),
+				 "", "km", "m", "1E3 *", "1E3 /"),
             UnitInstance("dst", "Millimeter",
-				 "", "mmtr", "mtr", "1E-3 *", "1E3 *"),
+				 "", "mm", "m", "1E-3 *", "1E3 *"),
             UnitInstance("dst", "Meter",
-				 "", "mtr", "mtr", "1 *", "1 *"),
+				 "", "m", "m", "1 *", "1 *"),
         ).forEach{
             if(it is UnitType) {
                 conversions[it.tag] = Pair(it, hashMapOf<String, UnitInstance>())
