@@ -50,7 +50,7 @@ object Conversions {
         var rv : Pair<String, String>? = null
         if (conversions[type] != null) {
            //  val p : Pair<UnitType, HashMap<String, UnitInstance>> = conversions[type]!!
-            val (unitType, cvtMap) = conversions[type]!!
+            val (_, cvtMap) = conversions[type]!!
             if (cvtMap[fromUnits] != null && cvtMap[toUnits] != null)
                 rv = Pair(cvtMap[fromUnits]!!.toBase, cvtMap[toUnits]!!.fromBase)
         }
@@ -63,27 +63,29 @@ object Conversions {
             UnitInstance("temp", "Centegrade",
                 "°C", "C", "C", "1 *", "1 *"),
             UnitInstance("temp", "Kelvin",
-                "°K", "K", "C", "273.15 +", "273.15 -"),
+                "°K", "K", "C", "273.15 -", "273.15 +"),
             UnitInstance("temp", "Fahrenheit",
-                "°F", "F", "C", "5 / 9 * 32 +", "32 - 5 * 9 /"),
+                "°F", "F", "C", "32 - 5 * 9 /", "5 / 9 * 32 +"),
 
             UnitType("Distance", "", "dst"),
             UnitInstance("dst", "Foot",
-				 "", "ft", "m", "0.3048 /", "0.3048 *"),
+				 "", "ft", "m", "0.3048 *", "0.3048 /"),
             UnitInstance("dst", "Inch",
-				 "", "in", "m", "0.0254 /", "0.0254 *"),
+				 "", "in", "m", "0.0254 *", "0.0254 /"),
             UnitInstance("dst", "Yard",
-				 "", "yd", "m", "0.9144 /", "0.9144 *"),
+				 "", "yd", "m", "0.9144 *", "0.9144 /"),
             UnitInstance("dst", "Mile",
-				 "", "mi", "m", "1609.344 /", "1609.344 *"),
+				 "", "mi", "m", "1609.344 *", "1609.344 /"),
+            UnitInstance("dst", "Fathom",
+                "", "fat", "m", "1.8288 *", "1.8288 /"),
             UnitInstance("dst", "Nautical Mile",
-				 "", "Nmi", "m", "1852 /", "1852 *"),
+                "", "Nmi", "m", "1852 *", "1852 /"),
             UnitInstance("dst", "Astronomical Unit",
-                    "", "AU", "m", "149597871E3 /", "149597871E3 *"),
+                    "", "AU", "m", "149597871E3 *", "149597871E3 /"),
             UnitInstance("dst", "Light Years",
-                    "", "LY", "m", "9.4607305e15 /", "9.4607305e15 *"),
+                    "", "LY", "m", "9.4607305e15 *", "9.4607305e15 /"),
             UnitInstance("dst", "Furlong (US)",
-				 "", "fur", "m", "201.168 /", "201.168 *"),
+				 "", "fur", "m", "201.168 *", "201.168 /"),
             UnitInstance("dst", "Centimeter",
 				 "", "cm", "m", "1E2 /", "1E2 *"),
             UnitInstance("dst", "Kilometer",
@@ -94,7 +96,7 @@ object Conversions {
 				 "", "m", "m", "1 *", "1 *"),
         ).forEach{
             if(it is UnitType) {
-                conversions[it.tag] = Pair(it, hashMapOf<String, UnitInstance>())
+                conversions[it.tag] = Pair(it, hashMapOf())
             }
             else if (it is UnitInstance) {
                 val (obj:UnitType,instanceMap:HashMap<String,UnitInstance>) = conversions[it.unitId]!!

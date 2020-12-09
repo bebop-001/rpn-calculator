@@ -1,52 +1,12 @@
-package com.kana_tutor.rpncalc
+@file:Suppress("unused", "UNUSED_VARIABLE", "UNUSED_PARAMETER")
 
+package com.kana_tutor.rpncalc
 import com.kana_tutor.rpncalc.ConversionTest.testIdentity
-import com.kana_tutor.rpncalc.ConversionTest.testMe
 import com.kana_tutor.rpncalc.ConversionTest.testSelected
 import com.kana_tutor.rpncalc.RpnParser.Companion.rpnCalculate
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
-import java.lang.Exception
-import java.lang.Math.abs
-import java.lang.StringBuilder
-import java.lang.System.exit
-import kotlin.system.exitProcess
 
 object ConversionTest {
-    val conversions = Conversions
-    var testId = 1
-    fun printResult(
-        rpnString: String, expectedStack: String, expectedErrors: String,
-        verbose: Boolean = false
-    ): Boolean {
-        val (stack, errors) = rpnCalculate(
-                rpnString.toRpnStack(), testId)
-        val stackAsStr = stack.toString()
-        val errorsFailed = errors != expectedErrors
-        val stackFailed = stackAsStr != expectedStack
-        val passed = !errorsFailed && !stackFailed
-        if (verbose) println(arrayOf(
-                "RECEIVED",
-                "\tRPN:\"$rpnString\"",
-                "\tStack: \"$stackAsStr\"",
-                "\tErrors:\"$errors\"")
-                .joinToString("\n")
-        )
-        if (passed)
-            println("test $testId \"$rpnString\" PASSED")
-        else {
-            println("test $testId \"$rpnString\" FAILED")
-            if (stackFailed) print(
-                    "    %s:\n\t > \"%s\"\n\t < \"%s\"\n".format(
-                            "Sack differed", expectedStack, stackAsStr
-                    ))
-            if (errorsFailed) print(
-                    "    %s:\n\t > \"%s\"\n\t < \"%s\"\n".format(
-                            "Errors differed", expectedErrors, errors
-                    ))
-        }
-        testId++
-        return passed
-    }
     // test convert to/from same unit and difference should be 0.
     fun testIdentity() :Boolean {
         var totalTests = 0
@@ -65,7 +25,7 @@ object ConversionTest {
                 val testStr = "format:fixed:on:2 FORMAT STO 100 DUP $from $to -"
                 val (rpnStack, errors) = rpnCalculate(testStr.toRpnStack())
                 if (rpnStack.size == 1 && rpnStack[0].value == 0.0)
-                    testsPassed++;
+                    testsPassed++
                 else
                     println("testIdenty:test $totalTests:$test FAILED")
             }
@@ -77,88 +37,53 @@ object ConversionTest {
     fun testSelected() : Boolean {
         var totalTests = 0
         var testsPassed = 0
-        data class Test (val type:String, val from:String, val to:String, val testVal : String, val expected:String)
+        data class Test(val type: String, val from: String, val to: String, val testVal: String, val expected: String)
         val tests = listOf(
-            Test("dst", "ft", "in", "1","12"),
-            Test("dst", "AU", "mi", "1","92955807"),
-            Test("dst", "LY", "mi", "1","5.8786254E12"),
-            Test("dst", "ft", "mi", "5280","1"),
+            Test("dst", "ft", "in", "1", "12"),
+            Test("dst", "ft", "mi", "5280", "1"),
+            Test("dst", "km", "mm", "1", "1.0E6"),
+            Test("dst", "yd", "km", "1000", "0.9144"),
+            Test("dst", "fur", "mi", "1000", "125"),
+            Test("dst", "fat", "ft", "1000", "6000"),
+            Test("dst", "AU", "mi", "1", "92955807"),
+            Test("dst", "LY", "mi", "1", "5.8786254E12"),
+            Test("temp", "C", "F", "100", "212"),
+            Test("temp", "F", "C", "32", "0"),
+            Test("temp", "F", "K", "1000", "810.92778"),
         )
         for (test in tests) {
             totalTests++
-            val (type, to, from, testVal, expected) = test
+            val (type, from, to, testVal, expected) = test
             val cnvt = Conversions.getFromTo(type, from, to)
             if (cnvt != null) {
                 val (fromCnvt, toCnvt) = cnvt
-                var testStr = "$testVal $toCnvt $fromCnvt"
+                val testStr = "$testVal $fromCnvt $toCnvt"
                 // val testStr = "format:fixed:on:5 FORMAT STO $expected $testVal $toCnvt $fromCnvt"
                 // println("test string:$testStr")
-                var (rpnStack, errors) = rpnCalculate(testStr.toRpnStack())
+                val (rpnStack, errors) = rpnCalculate(testStr.toRpnStack())
                 if (errors.isNotEmpty())
                     println("test $totalTests: $type:$from:$to Error: $errors")
-                println("testSelected:test $totalTests:$test: PctDiff:${"%.5f".format(rpnStack[0].value)}%")
                 val expt = expected.toDouble()
                 val result = rpnStack[0].value
-                val pctDiff = abs((result - expt) / expt) * 100.0
+                val pctDiff = kotlin.math.abs(
+                    if (result == expt) 0.0
+                    else ((result - expt) / expt) * 100.0
+                )
                 if (pctDiff < 10E-7) {
                     if (pctDiff != 0.0)
                         println("pct diff:%1.2e%%".format(pctDiff))
-                    println("test $totalTests $type:$from:$to PASSED")
+                    println("test $totalTests $type:from $testVal $from to $expected $to PASSED")
                     testsPassed++
                 }
-                else println("test $totalTests $type:$from:$to FAILED.\n" +
-                    "expecred $expected, received $result")
+                else {
+                    println("test $totalTests $type:from $testVal $from to $expected $to FAILED" +
+                        "\texpected $expected, received $result\n" +
+                        "\t${"pct diff:%5.2f%%".format(pctDiff)}")
+                }
             }
         }
         println("testSelected: $testsPassed of $totalTests passed")
         return totalTests == testsPassed
-    }
-
-
-    val tests =
-            listOf<Pair<String, () -> Pair<Int, Int>>>(
-                    /*
-                    Pair("test output formatting", ::testFormat),
-                    Pair("test math operations", ::testMathOps),
-                    Pair("test stack operations", ::testStackOps),
-                    Pair("test register operations", ::testRegOps),
-                    Pair("test save and restore registers", ::saveAndRestoreRegisters),
-
-                     */
-            )
-
-    fun testMe(testNumber: Int = -1) {
-            // Build a usage string.
-            val sb = StringBuilder()
-                    .append("Usage: RpnTestKt indexForTest\n")
-                    .append("Valid Tests:\n")
-            tests.indices.map {
-                sb.append("%2d) %s\n".format(it, tests[it].first))
-
-            var totalTests = 0
-            var testsPassed = 0
-            var testSets = 1
-            var testNumber = 0
-            if (testNumber > 0) {
-                val (testString, testFunction) = tests[testNumber]
-                println("============= test set ${testNumber}: $testString")
-                val (total, passed) = testFunction()
-                println("\t$passed of $total PASSED")
-                exitProcess(0)
-            }
-            else {
-                for ((testString, testFunction) in tests) {
-                    println("============= test set ${testSets++}: $testString")
-                    val (total, passed) = testFunction()
-                    println("\t$passed of $total PASSED")
-
-                    totalTests += total; testsPassed += passed
-                }
-            }
-            println("passed $testsPassed of $totalTests: " +
-                    "%.2f".format(testsPassed / totalTests.toDouble() * 100.0) +
-                    "%")
-        }
     }
 }
 fun interactive() {
@@ -189,8 +114,8 @@ fun interactive() {
                 if (cvt == null)
                     println("can't convert $type:$from:$to")
                 else {
-                    val (from, to) = cvt
-                    val cvtString = "$value format:fixed:on:2 FORMAT STO $from $to"
+                    val (cvtFrom, cvtTo) = cvt
+                    val cvtString = "$value format:fixed:on:2 FORMAT STO $cvtFrom $cvtTo"
                     println("cvtString = \"$cvtString\"")
 
                     val stk = rpnCalculate(cvtString.toRpnStack())
@@ -231,10 +156,5 @@ fun interactive() {
 fun main(args: Array<String>) {
     testIdentity()
     testSelected()
-    exitProcess(0)
-    if (args.size == 1) {
-        if (args[0] == "-i") interactive()
-        else if (args[0] == "-t") ConversionTest.testMe(-1)
-        else if ("^\\d+$".toRegex().matches(args[0])) testMe(args[0].toInt())
-    }
+    if (args.size == 1 && args[0] == "-i") interactive()
 }
