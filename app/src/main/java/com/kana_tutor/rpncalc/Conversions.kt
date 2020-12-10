@@ -14,16 +14,10 @@ object Conversions {
     )
 
     class UnitInstance(
-        val unitId:String,
+        val type:String, // dst, time, etc.
         name: String,
         description: String,
         tag: String,
-            // gram for weight or cm for example
-        val base: String,
-            // this contains string RPN code to convert to/from this instance.
-            // conversion is accomplished by "Chaining" conversions, so
-            // the conversion from feet to nextInstance will be
-            // ft -> cm, cm -> in
         val toBase: String,
         val fromBase: String,
     ) : Unit(name, description, tag)
@@ -31,8 +25,9 @@ object Conversions {
     class UnitType(
         name: String,
         description: String,
-        base: String,
-    ) : Unit(name, description, base)
+        type: String, // like temp, dst, time, etc.
+        base: String, // like m, mm, mile, etc
+    ) : Unit(name, description, type)
 
     val conversions = mutableMapOf<String, Pair<UnitType, HashMap<String, UnitInstance>>>()
     fun listConversions() : List<String> {
@@ -59,47 +54,47 @@ object Conversions {
 
     init {
         arrayOf<Any>(
-            UnitType("Temperature", "", "temp"),
+            UnitType("Temperature", "", "temp", "C"),
             UnitInstance("temp", "Centegrade",
-                "°C", "C", "C", "1 *", "1 *"),
+                "°C", "C", "1 *", "1 *"),
             UnitInstance("temp", "Kelvin",
-                "°K", "K", "C", "273.15 -", "273.15 +"),
+                "°K", "K", "273.15 -", "273.15 +"),
             UnitInstance("temp", "Fahrenheit",
-                "°F", "F", "C", "32 - 5 * 9 /", "5 / 9 * 32 +"),
+                "°F", "F", "32 - 5 * 9 /", "5 / 9 * 32 +"),
 
-            UnitType("Distance", "", "dst"),
+            UnitType("Distance", "", "dst", "m"),
             UnitInstance("dst", "Foot",
-				 "", "ft", "m", "0.3048 *", "0.3048 /"),
+				 "", "ft", "0.3048 *", "0.3048 /"),
             UnitInstance("dst", "Inch",
-				 "", "in", "m", "0.0254 *", "0.0254 /"),
+				 "", "in", "0.0254 *", "0.0254 /"),
             UnitInstance("dst", "Yard",
-				 "", "yd", "m", "0.9144 *", "0.9144 /"),
+				 "", "yd", "0.9144 *", "0.9144 /"),
             UnitInstance("dst", "Mile",
-				 "", "mi", "m", "1609.344 *", "1609.344 /"),
+				 "", "mi", "1609.344 *", "1609.344 /"),
             UnitInstance("dst", "Fathom",
-                "", "fm", "m", "1.8288 *", "1.8288 /"),
+                "", "fm", "1.8288 *", "1.8288 /"),
             UnitInstance("dst", "Nautical Mile",
-                "", "Nmi", "m", "1852 *", "1852 /"),
+                "", "Nmi", "1852 *", "1852 /"),
             UnitInstance("dst", "Astronomical Unit",
-                    "", "AU", "m", "149597871E3 *", "149597871E3 /"),
+                    "", "AU", "149597871E3 *", "149597871E3 /"),
             UnitInstance("dst", "Light Years",
-                    "", "LY", "m", "9.4607305e15 *", "9.4607305e15 /"),
+                    "", "LY", "9.4607305e15 *", "9.4607305e15 /"),
             UnitInstance("dst", "Furlong (US)",
-				 "", "fur", "m", "201.168 *", "201.168 /"),
+				 "", "fur", "201.168 *", "201.168 /"),
             UnitInstance("dst", "Centimeter",
-				 "", "cm", "m", "1E2 /", "1E2 *"),
+				 "", "cm", "1E2 /", "1E2 *"),
             UnitInstance("dst", "Kilometer",
-				 "", "km", "m", "1E3 *", "1E3 /"),
+				 "", "km", "1E3 *", "1E3 /"),
             UnitInstance("dst", "Millimeter",
-				 "", "mm", "m", "1E-3 *", "1E3 *"),
+				 "", "mm", "1E-3 *", "1E3 *"),
             UnitInstance("dst", "Meter",
-				 "", "m", "m", "1 *", "1 *"),
+				 "", "m", "1 *", "1 *"),
         ).forEach{
             if(it is UnitType) {
                 conversions[it.tag] = Pair(it, hashMapOf())
             }
             else if (it is UnitInstance) {
-                val (obj:UnitType,instanceMap:HashMap<String,UnitInstance>) = conversions[it.unitId]!!
+                val (obj:UnitType,instanceMap:HashMap<String,UnitInstance>) = conversions[it.type]!!
                 instanceMap[it.tag] = it
             }
             else throw RuntimeException(
