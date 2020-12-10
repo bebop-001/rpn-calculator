@@ -77,7 +77,7 @@ object Conversions {
             UnitInstance("dst", "Mile",
 				 "", "mi", "m", "1609.344 *", "1609.344 /"),
             UnitInstance("dst", "Fathom",
-                "", "fat", "m", "1.8288 *", "1.8288 /"),
+                "", "fm", "m", "1.8288 *", "1.8288 /"),
             UnitInstance("dst", "Nautical Mile",
                 "", "Nmi", "m", "1852 *", "1852 /"),
             UnitInstance("dst", "Astronomical Unit",
