@@ -41,10 +41,13 @@ object Conversions {
         }
         return rv
     }
-    fun getFromTo(type:String, fromUnits:String, toUnits:String) :Pair<String, String>?{
+    fun getFromTo(
+            type:String,
+            fromUnits:String,
+            toUnits:String
+    ) :Pair<String, String>?{
         var rv : Pair<String, String>? = null
         if (conversions[type] != null) {
-           //  val p : Pair<UnitType, HashMap<String, UnitInstance>> = conversions[type]!!
             val (_, cvtMap) = conversions[type]!!
             if (cvtMap[fromUnits] != null && cvtMap[toUnits] != null)
                 rv = Pair(cvtMap[fromUnits]!!.toBase, cvtMap[toUnits]!!.fromBase)
@@ -72,7 +75,7 @@ object Conversions {
             UnitInstance("dst", "Mile",
 				 "", "mi", "1609.344 *", "1609.344 /"),
             UnitInstance("dst", "Fathom",
-                "", "fm", "1.8288 *", "1.8288 /"),
+                "", "fat", "1.8288 *", "1.8288 /"),
             UnitInstance("dst", "Nautical Mile",
                 "", "Nmi", "1852 *", "1852 /"),
             UnitInstance("dst", "Astronomical Unit",
@@ -89,12 +92,33 @@ object Conversions {
 				 "", "mm", "1E-3 *", "1E3 *"),
             UnitInstance("dst", "Meter",
 				 "", "m", "1 *", "1 *"),
+
+            UnitType("Time", "Time in seconds.",
+                "time", "s"),
+            UnitInstance("time", "Seconds",
+                "", "s", "1 *", "1 *"),
+            UnitInstance("time", "Milli-seconds",
+                "", "milli-s", "1E-3 *", "1E3 *"),
+            UnitInstance("time", "Micro-seconds",
+                "", "micro-s", "1E-6 *", "1E6 *"),
+            UnitInstance("time", "Minute",
+                "", "min", "60 *", "60 /"),
+            UnitInstance("time", "Hour",
+                "", "hr", "${60*60} *", "${60*60} /"),
+            UnitInstance("time", "Day",
+                "", "day", "${60*60*24} *", "${60*60*24} /"),
+            UnitInstance("time", "Week",
+                "", "wk", "${60*60*24*7} *", "${60*60*24*7} /"),
+            UnitInstance("time", "Fortnight",
+                "", "fortn", "${60*60*24*14} *", "${60*60*24*14} /"),
+            UnitInstance("time", "Year",
+                "", "yr", "${60*60*24*365} *", "${60*60*24*365} /"),
         ).forEach{
             if(it is UnitType) {
                 conversions[it.tag] = Pair(it, hashMapOf())
             }
             else if (it is UnitInstance) {
-                val (obj:UnitType,instanceMap:HashMap<String,UnitInstance>) = conversions[it.type]!!
+                val (obj,instanceMap) = conversions[it.type]!!
                 instanceMap[it.tag] = it
             }
             else throw RuntimeException(

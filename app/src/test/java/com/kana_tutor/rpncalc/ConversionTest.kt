@@ -15,10 +15,14 @@ object ConversionTest {
         for(test in tests) {
             totalTests++
             val matchResult =
-                    "^([^:]+):(\\S+)\\s+.*([A-Z][^:]+):(.*)$".toRegex()
-                            .find(test)
+                "^([^:]+):(\\S+)\\s+.*([A-Z][^:]+):(.*)$".toRegex()
+                .find(test)
+            if (matchResult == null)
+                throw RuntimeException("testIdentity:Failed to " +
+                    "find test match for \"$test\"")
+            println(matchResult.groupValues.joinToString(" x "))
             val (matched, type, typeTag, instance, instanceTag)
-                = matchResult!!.groupValues
+                = matchResult.groupValues
             val cnvt = Conversions.getFromTo(typeTag, instanceTag, instanceTag)
             if (cnvt != null) {
                 val (to, from) = cnvt
@@ -47,15 +51,27 @@ object ConversionTest {
             Test("dst", "fat", "ft", "1000", "6000"),
             Test("dst", "AU", "mi", "1", "92955807"),
             Test("dst", "LY", "mi", "1", "5.8786254E12"),
+
             Test("temp", "C", "F", "100", "212"),
             Test("temp", "F", "C", "32", "0"),
             Test("temp", "F", "K", "1000", "810.92778"),
-        )
+
+            Test("time", "s", "micro-s", "1", "1E6"),
+            Test("time", "s", "milli-s", "1", "1E3"),
+            Test("time", "min", "s", "1", "60"),
+            Test("time", "hr", "min", "1", "60"),
+            Test("time", "day", "hr", "1", "24"),
+            Test("time", "yr", "day", "1", "365"),
+
+            )
         for (test in tests) {
             totalTests++
             val (type, from, to, testVal, expected) = test
             val cnvt = Conversions.getFromTo(type, from, to)
-            if (cnvt != null) {
+            if (cnvt == null) {
+                println("test $totalTests $type:$from:$to: no conversion found. FAILED")
+            }
+            else {
                 val (fromCnvt, toCnvt) = cnvt
                 val testStr = "$testVal $fromCnvt $toCnvt"
                 // val testStr = "format:fixed:on:5 FORMAT STO $expected $testVal $toCnvt $fromCnvt"
