@@ -1,13 +1,14 @@
 package com.kana_tutor.rpncalc
 
-import com.kana_tutor.rpncalc.RpnParser.Companion.rpnCalculate
+import com.kana_tutor.rpncalc.RpnParser.rpnCalculate
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
+import com.kana_tutor.rpncalc.RpnTest.tests
 import java.lang.RuntimeException
 import java.lang.StringBuilder
 import java.lang.System.exit
 
 
-class RpnTest {
+object RpnTest {
     private var testId = 1
     private fun printResult(
         rpnString: String, expectedStack: String, expectedErrors: String,
@@ -264,14 +265,16 @@ class RpnTest {
                     Pair("test save and restore registers", ::saveAndRestoreRegisters),
             )
 
-    fun main(args: Array<String>) {
-        // Build a usage string.
-        val sb = StringBuilder()
-                .append("Usage: RpnTestKt indexForTest\n")
-                .append("Valid Tests:\n")
-        tests.indices.map {
-            sb.append("%2d) %s\n".format(it, tests[it].first))
-        }
+}
+
+fun main(args: Array<String>) {
+    // Build a usage string.
+    val sb = StringBuilder()
+            .append("Usage: RpnTestKt indexForTest\n")
+            .append("Valid Tests:\n")
+    tests.indices.map {
+        sb.append("%2d) %s\n".format(it, tests[it].first))
+    }
 
         var totalTests = 0
         var testsPassed = 0
@@ -309,5 +312,4 @@ class RpnTest {
                 "%.2f".format(testsPassed / totalTests.toDouble() * 100.0) +
                 "%")
     }
-}
 

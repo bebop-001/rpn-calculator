@@ -1,6 +1,6 @@
 package com.kana_tutor.rpncalc
 
-import com.kana_tutor.rpncalc.RpnParser.Companion.toFormattedString
+import com.kana_tutor.rpncalc.RpnParser.toFormattedString
 import com.kana_tutor.rpncalc.kanautils.longBitsToDoubleOrNull
 import com.kana_tutor.rpncalc.kanautils.toLongBitsString
 import java.util.*

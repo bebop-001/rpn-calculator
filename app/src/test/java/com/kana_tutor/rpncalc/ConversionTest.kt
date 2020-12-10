@@ -3,7 +3,7 @@
 package com.kana_tutor.rpncalc
 import com.kana_tutor.rpncalc.ConversionTest.testIdentity
 import com.kana_tutor.rpncalc.ConversionTest.testSelected
-import com.kana_tutor.rpncalc.RpnParser.Companion.rpnCalculate
+import com.kana_tutor.rpncalc.RpnParser.rpnCalculate
 import com.kana_tutor.rpncalc.RpnStack.Companion.toRpnStack
 
 object ConversionTest {
